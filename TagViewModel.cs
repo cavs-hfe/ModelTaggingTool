@@ -106,7 +106,7 @@ namespace ModelViewer
                 // Expand all the way up to the root.
                 if (isChecked && parent != null)
                 {
-                    parent.isChecked = true;
+                    parent.IsChecked = true;
                 }
             }
         }

@@ -4,7 +4,7 @@
     xmlns:helix="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
         xmlns:modelViewer="clr-namespace:ModelViewer" Title="{Binding ApplicationTitle}" Height="600" Width="800" Background="Black">
     <Grid>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -13,9 +13,9 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*" />
             <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="1*" />            
+            <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
-        
+
         <Menu Grid.Row="0" Grid.ColumnSpan="3">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
@@ -33,7 +33,7 @@
                 <MenuItem Header="_About" Command="{Binding HelpAboutCommand}"/>
             </MenuItem>
         </Menu>
-        
+
         <DockPanel Grid.Row="1" Grid.Column="0">
             <ToolBarTray DockPanel.Dock="Top">
                 <ToolBar>
@@ -48,7 +48,7 @@
                     </Button>
                 </ToolBar>
             </ToolBarTray>
-            
+
             <TreeView x:Name="fileTree">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
@@ -58,11 +58,11 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </DockPanel>
-        
+
         <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 
         <DockPanel Grid.Row="1" Grid.Column="2" >
-            
+
             <ToolBarTray DockPanel.Dock="Top">
                 <ToolBar>
                     <Button x:Name="NewTagButton" Click="NewTagButton_Click" ToolTip="Add New Tag">
@@ -76,7 +76,7 @@
                     </Button>
                 </ToolBar>
             </ToolBarTray>
-            
+
             <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
@@ -92,12 +92,15 @@
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                        <TextBlock Text="{Binding Name}" />
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" />
+                        </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
         </DockPanel>
-        
+
         <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,1,0" MouseDown="UIElement_OnMouseDown">
@@ -106,10 +109,10 @@
                 <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>
             </ModelVisual3D>
         </helix:HelixViewport3D>
-        
+
         <StatusBar Grid.Row="2" Grid.ColumnSpan="3">
             <StatusBarItem>
-                Current User: 
+                Current User:
             </StatusBarItem>
             <StatusBarItem x:Name="current_user" Content="{Binding CurrentUser}"/>
             <Separator />

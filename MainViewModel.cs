@@ -246,7 +246,7 @@ namespace ModelViewer
                         }
                     }
                 }
-                else if (File.Exists(Path.GetDirectoryName(path) + "\\" + s))
+                else if (File.Exists(Path.GetDirectoryName(path) + "\\" + s) && !File.Exists(modelDirectory + s))
                 {
                     File.Copy(Path.GetDirectoryName(path) + "\\" + s, modelDirectory + s);
                     List<string> assets = findAssets(modelDirectory + s);
