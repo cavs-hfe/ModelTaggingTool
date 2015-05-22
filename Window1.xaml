@@ -1,0 +1,130 @@
+﻿<Window x:Class="ModelViewer.Window1"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helix="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+        xmlns:modelViewer="clr-namespace:ModelViewer" Title="{Binding ApplicationTitle}" Height="600" Width="800" Background="Black">
+    <Grid>
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="1*" />            
+        </Grid.ColumnDefinitions>
+        
+        <Menu Grid.Row="0" Grid.ColumnSpan="3">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
+                <MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Copy XAML" Command="{Binding EditCopyXamlCommand}"/>
+                <MenuItem Header="_Settings" Command="{Binding EditSettingsCommand}" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Zoom extents" Command="{Binding ViewZoomExtentsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{Binding HelpAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+        
+        <DockPanel Grid.Row="1" Grid.Column="0">
+            <ToolBarTray DockPanel.Dock="Top">
+                <ToolBar>
+                    <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New Model">
+                        <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="RefreshModels" Click="RefreshModels_Click" ToolTip="Refresh Models">
+                        <Image Source="/Images/Command-Refresh-128.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="DeleteModel" Click="DeleteModel_Click" ToolTip="Delete Selected Model">
+                        <Image Source="/Images/Delete-128.png" Width="25" Height="25" />
+                    </Button>
+                </ToolBar>
+            </ToolBarTray>
+            
+            <TreeView x:Name="fileTree">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
+                        <Setter Property="IsExpanded" Value="True" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+        </DockPanel>
+        
+        <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
+
+        <DockPanel Grid.Row="1" Grid.Column="2" >
+            
+            <ToolBarTray DockPanel.Dock="Top">
+                <ToolBar>
+                    <Button x:Name="NewTagButton" Click="NewTagButton_Click" ToolTip="Add New Tag">
+                        <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="RefreshTags" Click="RefreshTags_Click" ToolTip="Refresh Tags">
+                        <Image Source="/Images/Command-Refresh-128.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="DeleteTag" Click="DeleteTag_Click" ToolTip="Delete Selected Tag">
+                        <Image Source="/Images/Delete-128.png" Width="25" Height="25" />
+                    </Button>
+                </ToolBar>
+            </ToolBarTray>
+            
+            <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
+                        <EventSetter Event="PreviewMouseMove" Handler="OnPreviewMouseMove" />
+                        <EventSetter Event="DragOver" Handler="OnDragOver" />
+                        <EventSetter Event="Drop" Handler="OnDrop" />
+                        <Setter Property="AllowDrop" Value="True" />
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <!--<Setter Property="IsChecked" Value="{Binding IsChecked, Mode=TwoWay}" />-->
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <TextBlock Text="{Binding Name}" />
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </DockPanel>
+        
+        <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
+
+        <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,1,0" MouseDown="UIElement_OnMouseDown">
+            <ModelVisual3D x:Name="root1">
+                <!--<helix:CubeVisual3D Fill="Red"/>
+                <helix:GridLinesVisual3D/> -->
+                <helix:DefaultLights/>
+                <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>
+                <!--<helix:FileModelVisual3D Source="{Binding CurrentModelPath, Mode=TwoWay}" ModelLoaded="ModelLoaded"/>-->
+                <!--<helix:Expander3D Expansion="{Binding Expansion}" Content="{Binding CurrentModel}"/>-->
+                <!-- <helix:HelixViewport3D.Triggers>
+                <EventTrigger 
+            </helix:HelixViewport3D.Triggers>-->
+            </ModelVisual3D>
+        </helix:HelixViewport3D>
+        
+        <StatusBar Grid.Row="2" Grid.ColumnSpan="3">
+            <StatusBarItem>
+                Current User: 
+            </StatusBarItem>
+            <StatusBarItem x:Name="current_user" Content="{Binding CurrentUser}"/>
+            <Separator />
+            <StatusBarItem>
+                Path to Model Directory:
+            </StatusBarItem>
+            <StatusBarItem x:Name="model_directory" Content="{Binding ModelDirectory}"/>
+        </StatusBar>
+    </Grid>
+</Window>
