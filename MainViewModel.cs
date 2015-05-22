@@ -1,7 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MainViewModel.cs" company="Helix Toolkit">
-//   Copyright (c) 2014 Helix Toolkit contributors
-// </copyright>
+// Based on code provided in Helix Toolkit example ModelViewer
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace ModelViewer
@@ -23,12 +21,11 @@ namespace ModelViewer
     using System.Text.RegularExpressions;
     using System.Collections.ObjectModel;
 
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Reviewed. Suppression is OK here.")]
     public class MainViewModel : Observable
     {
         private const string OpenFileFilter = "3D model files (*.3ds;*.obj;*.lwo;*.stl)|*.3ds;*.obj;*.objz;*.lwo;*.stl";
 
-        private const string TitleFormatString = "3D model viewer - {0}";
+        private const string TitleFormatString = "3D Model Tagging Tool - {0}";
 
         private readonly IFileDialogService fileDialogService;
 
@@ -56,8 +53,6 @@ namespace ModelViewer
 
         private TagViewModel rootTagView;
 
-        private int rootTagId = 18;
-
         public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree, TreeView fileTree)
         {
             if (viewport == null)
@@ -75,7 +70,6 @@ namespace ModelViewer
             this.FileExportCommand = new DelegateCommand(this.FileExport);
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
-            this.EditCopyXamlCommand = new DelegateCommand(this.CopyXaml);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
             this.ApplicationTitle = "3D Model Tagging Tool";
             this.Elements = new List<VisualViewModel>();
@@ -100,30 +94,10 @@ namespace ModelViewer
             }
         }
 
-
+        #region Tag Code
 
         public void refreshTagTree()
         {
-            //tagTree.Items.Clear();
-
-            /*//get information to populate tree
-            //get root tags
-            string query = "SELECT * FROM Tags WHERE parent IS NULL";
-
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-            DataTable table = new DataTable();
-            adapter.Fill(table);
-
-            foreach (DataRow row in table.Rows)
-            {
-                TreeViewItem treeItem = new TreeViewItem();
-                treeItem.Header = row["tag_name"];
-                populateTagTree(Convert.ToInt32(row["tag_id"]), treeItem);
-                tagTree.Items.Add(treeItem);
-            }*/
-
-
-
 
             Tag rootTag = new Tag(18, "root-tag", -1);
             rootTag = PopulateRootTag(rootTag);
@@ -153,42 +127,18 @@ namespace ModelViewer
             return parentTag;
         }
 
-        private void populateTagTree(int parentId, TreeViewItem parentNode)
+        public void addNewTag(string tag)
         {
-            string query = "SELECT * FROM Tags WHERE parent = " + parentId;
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-            DataTable table = new DataTable();
-            adapter.Fill(table);
-
-            foreach (DataRow row in table.Rows)
-            {
-                TreeViewItem node = new TreeViewItem();
-                node.Header = row["tag_name"];
-                populateTagTree(Convert.ToInt32(row["tag_id"]), node);
-                parentNode.Items.Add(node);
-            }
-
+            string query = "INSERT INTO Tags (tag_name) VALUES ('" + tag + "');";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
         }
 
-        public void refreshFileTree()
+        public void deleteTag(string tag)
         {
-            fileTree.Items.Clear();
-
-            //get files
-            string query = "SELECT * FROM Objects";
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-            DataTable table = new DataTable();
-            adapter.Fill(table);
-
-            TreeViewItem treeItem2 = new TreeViewItem();
-            treeItem2.Header = "Object";
-
-            foreach (DataRow row in table.Rows)
-            {
-                treeItem2.Items.Add(row["friendly_name"] + " (" + row["file_name"] + ")");
-            }
-
-            fileTree.Items.Add(treeItem2);
+            string query = "DELETE FROM Tags WHERE tag_name = '" + tag + "';";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
         }
 
         public void updateParentTag(string child, string newParent)
@@ -212,182 +162,29 @@ namespace ModelViewer
             refreshTagTree();
         }
 
-        public void addNewTag(string tag)
-        {
-            string query = "INSERT INTO Tags (tag_name) VALUES ('" + tag + "');";
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
-        }
+        #endregion
 
-        public void deleteTag(string tag)
-        {
-            string query = "DELETE FROM Tags WHERE tag_name = '" + tag + "';";
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
-        }
+        #region Object Code
 
-        public void deleteObject(string fileName)
+        public void refreshFileTree()
         {
-            string query = "DELETE FROM Objects WHERE file_name = '" + fileName + "';";
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
+            fileTree.Items.Clear();
 
-            //TODO: delete files too
-        }
+            //get files
+            string query = "SELECT * FROM Objects";
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
 
-        /// <summary>
-        /// Returns a read-only collection containing the first person 
-        /// in the family tree, to which the TreeView can bind.
-        /// </summary>
-        public ReadOnlyCollection<TagViewModel> FirstGeneration
-        {
-            get { return new ReadOnlyCollection<TagViewModel>(new TagViewModel[] {rootTagView}); }
-        }
+            TreeViewItem treeItem2 = new TreeViewItem();
+            treeItem2.Header = "Object";
 
-        public string ModelDirectory
-        {
-            get
+            foreach (DataRow row in table.Rows)
             {
-                return this.modelDirectory;
-            }
-            set
-            {
-                this.modelDirectory = value;
-                this.RaisePropertyChanged("ModelDirectory");
-            }
-        }
-
-        public string CurrentUser
-        {
-            get
-            {
-                return this.currentUser;
-            }
-            set
-            {
-                this.currentUser = value;
-                this.RaisePropertyChanged("CurrentUser");
-            }
-        }
-
-        public string CurrentModelPath
-        {
-            get
-            {
-                return this.currentModelPath;
+                treeItem2.Items.Add(row["friendly_name"] + " (" + row["file_name"] + ")");
             }
 
-            set
-            {
-                this.currentModelPath = value;
-                this.RaisePropertyChanged("CurrentModelPath");
-            }
-        }
-
-        public string ApplicationTitle
-        {
-            get
-            {
-                return this.applicationTitle;
-            }
-
-            set
-            {
-                this.applicationTitle = value;
-                this.RaisePropertyChanged("ApplicationTitle");
-            }
-        }
-
-        public List<VisualViewModel> Elements { get; set; }
-
-        public double Expansion
-        {
-            get
-            {
-                return this.expansion;
-            }
-
-            set
-            {
-                if (!this.expansion.Equals(value))
-                {
-                    this.expansion = value;
-                    this.RaisePropertyChanged("Expansion");
-                }
-            }
-        }
-
-        public Model3D CurrentModel
-        {
-            get
-            {
-                return this.currentModel;
-            }
-
-            set
-            {
-                this.currentModel = value;
-                this.RaisePropertyChanged("CurrentModel");
-            }
-        }
-
-        public ICommand FileOpenCommand { get; set; }
-
-        public ICommand FileExportCommand { get; set; }
-
-        public ICommand FileExitCommand { get; set; }
-
-        public ICommand HelpAboutCommand { get; set; }
-
-        public ICommand ViewZoomExtentsCommand { get; set; }
-
-        public ICommand EditCopyXamlCommand { get; set; }
-
-        public ICommand EditSettingsCommand { get; set; }
-
-        private static void FileExit()
-        {
-            Application.Current.Shutdown();
-        }
-
-        private void FileExport()
-        {
-            var path = this.fileDialogService.SaveFileDialog(null, null, Exporters.Filter, ".png");
-            if (path == null)
-            {
-                return;
-            }
-
-            this.viewport.Export(path);
-        }
-
-        private void CopyXaml()
-        {
-            var rd = XamlExporter.WrapInResourceDictionary(this.CurrentModel);
-            Clipboard.SetText(XamlHelper.GetXaml(rd));
-        }
-
-        private void Settings()
-        {
-            SettingsDialog sd = new SettingsDialog(modelDirectory, currentUser);
-            if (sd.ShowDialog() == true)
-            {
-                this.CurrentUser = sd.CurrentUser;
-                this.modelDirectory = sd.ModelDirectoryPath;
-            }
-        }
-
-        private void ViewZoomExtents()
-        {
-            this.viewport.ZoomExtents(500);
-        }
-
-        private async void FileOpen()
-        {
-            this.CurrentModelPath = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
-            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
-            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
-            this.viewport.ZoomExtents(0);
+            fileTree.Items.Add(treeItem2);
         }
 
         public async void AddModel()
@@ -405,19 +202,6 @@ namespace ModelViewer
             this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
-        }
-
-        public async void LoadModel(string filename)
-        {
-            this.CurrentModelPath = modelDirectory + filename;
-            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
-            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
-            this.viewport.ZoomExtents(0);
-        }
-
-        public void resetModel()
-        {
-            this.CurrentModel = this.Load(this.CurrentModelPath, false);
         }
 
         private void CopyFiles(string path)
@@ -553,6 +337,185 @@ namespace ModelViewer
             string query = "INSERT INTO Objects (file_name, friendly_name) VALUES ('" + filename + "', 'object');";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
+        }
+
+        public async void LoadModel(string filename)
+        {
+            this.CurrentModelPath = modelDirectory + filename;
+            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
+            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
+            this.viewport.ZoomExtents(0);
+        }
+
+        public void deleteObject(string fileName)
+        {
+            string query = "DELETE FROM Objects WHERE file_name = '" + fileName + "';";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+
+            //TODO: delete files too
+        }
+
+        #endregion
+
+        #region Property Code
+
+        /// <summary>
+        /// Returns a read-only collection containing the first person 
+        /// in the family tree, to which the TreeView can bind.
+        /// </summary>
+        public ReadOnlyCollection<TagViewModel> FirstGeneration
+        {
+            get { return new ReadOnlyCollection<TagViewModel>(new TagViewModel[] { rootTagView }); }
+        }
+
+        public string ModelDirectory
+        {
+            get
+            {
+                return this.modelDirectory;
+            }
+            set
+            {
+                this.modelDirectory = value;
+                this.RaisePropertyChanged("ModelDirectory");
+            }
+        }
+
+        public string CurrentUser
+        {
+            get
+            {
+                return this.currentUser;
+            }
+            set
+            {
+                this.currentUser = value;
+                this.RaisePropertyChanged("CurrentUser");
+            }
+        }
+
+        public string CurrentModelPath
+        {
+            get
+            {
+                return this.currentModelPath;
+            }
+
+            set
+            {
+                this.currentModelPath = value;
+                this.RaisePropertyChanged("CurrentModelPath");
+            }
+        }
+
+        public string ApplicationTitle
+        {
+            get
+            {
+                return this.applicationTitle;
+            }
+
+            set
+            {
+                this.applicationTitle = value;
+                this.RaisePropertyChanged("ApplicationTitle");
+            }
+        }
+
+        public List<VisualViewModel> Elements { get; set; }
+
+        public double Expansion
+        {
+            get
+            {
+                return this.expansion;
+            }
+
+            set
+            {
+                if (!this.expansion.Equals(value))
+                {
+                    this.expansion = value;
+                    this.RaisePropertyChanged("Expansion");
+                }
+            }
+        }
+
+        public Model3D CurrentModel
+        {
+            get
+            {
+                return this.currentModel;
+            }
+
+            set
+            {
+                this.currentModel = value;
+                this.RaisePropertyChanged("CurrentModel");
+            }
+        }
+
+        #endregion
+
+        #region Menu Commands
+
+        public ICommand FileOpenCommand { get; set; }
+
+        public ICommand FileExportCommand { get; set; }
+
+        public ICommand FileExitCommand { get; set; }
+
+        public ICommand HelpAboutCommand { get; set; }
+
+        public ICommand ViewZoomExtentsCommand { get; set; }
+
+        public ICommand EditSettingsCommand { get; set; }
+
+        private static void FileExit()
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void FileExport()
+        {
+            var path = this.fileDialogService.SaveFileDialog(null, null, Exporters.Filter, ".png");
+            if (path == null)
+            {
+                return;
+            }
+
+            this.viewport.Export(path);
+        }
+
+        private void Settings()
+        {
+            SettingsDialog sd = new SettingsDialog(modelDirectory, currentUser);
+            if (sd.ShowDialog() == true)
+            {
+                this.CurrentUser = sd.CurrentUser;
+                this.modelDirectory = sd.ModelDirectoryPath;
+            }
+        }
+
+        private void ViewZoomExtents()
+        {
+            this.viewport.ZoomExtents(500);
+        }
+
+        private async void FileOpen()
+        {
+            this.CurrentModelPath = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
+            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
+            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
+            this.viewport.ZoomExtents(0);
+        }
+
+        #endregion
+
+        public void resetModel()
+        {
+            this.CurrentModel = this.Load(this.CurrentModelPath, false);
         }
 
         private async Task<Model3DGroup> LoadAsync(string model3DPath, bool freeze)

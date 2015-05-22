@@ -69,46 +69,6 @@ namespace ModelViewer
             }
         }
 
-        private void resetMaterials()
-        {
-            Model3DGroup group = model1.Content as Model3DGroup;
-            foreach (var v in group.Children)
-            {
-                GeometryModel3D g = v as GeometryModel3D;
-                if (g.Material is MaterialGroup)
-                {
-                    var materialGroup = g.Material as MaterialGroup;
-
-                    if (materialGroup.Children.Last() is EmissiveMaterial)
-                    {
-                        EmissiveMaterial em = materialGroup.Children.Last() as EmissiveMaterial;
-                        if (em.Brush == new SolidColorBrush(Colors.DarkGreen))
-                        {
-                            MaterialGroup mg = new MaterialGroup();
-                            foreach (Material m in materialGroup.Children)
-                            {
-                                if (m is EmissiveMaterial)
-                                {
-                                    mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.White)));
-                                }
-                                else
-                                {
-                                    mg.Children.Add(m);
-                                }
-                            }
-
-                            g.Material = mg;
-
-                            /*MaterialGroup mgBack = new MaterialGroup();
-                            mgBack.Children.Add(g.BackMaterial);
-                            mgBack.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.White)));
-                            g.BackMaterial = mgBack;*/
-                        }
-                    }
-                }
-            }
-        }
-
         private void resetModel()
         {
             MainViewModel mvm = this.DataContext as MainViewModel;
@@ -117,15 +77,11 @@ namespace ModelViewer
 
         private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
         {
-            //Console.WriteLine("double clicked");
-
             //make sure double click on same item
             if (sender is TreeViewItem)
             {
-                //Console.WriteLine("double clicked on " + fileTree.SelectedItem);
                 string filename = fileTree.SelectedItem.ToString();
                 filename = filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2);
-                //Console.WriteLine("filename:" + filename);
 
                 MainViewModel mvm = this.DataContext as MainViewModel;
                 mvm.LoadModel(filename);
@@ -133,9 +89,9 @@ namespace ModelViewer
 
         }
 
+        #region Drag and Drop
+
         //Drag and drop code from http://www.codeproject.com/Articles/55168/Drag-and-Drop-Feature-in-WPF-TreeView-Control
-
-
         private void OnPreviewLeftMouseButtonDown(object sender, MouseButtonEventArgs e)
         {
             startPoint = e.GetPosition(tagTree);
@@ -216,6 +172,10 @@ namespace ModelViewer
             }
         }
 
+        #endregion
+
+        #region Tag Toolbar Button Handlers
+
         private void NewTagButton_Click(object sender, RoutedEventArgs e)
         {
             NewTagDialog ntd = new NewTagDialog();
@@ -227,16 +187,40 @@ namespace ModelViewer
             }
         }
 
-        private void NewModelButton_Click(object sender, RoutedEventArgs e)
-        {
-            MainViewModel mvm = this.DataContext as MainViewModel;
-            mvm.AddModel();
-        }
-
         private void RefreshTags_Click(object sender, RoutedEventArgs e)
         {
             MainViewModel mvm = this.DataContext as MainViewModel;
             mvm.refreshTagTree();
+        }
+
+        private void DeleteTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (tagTree.SelectedItem != null)
+            {
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this tag? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                {
+                    MainViewModel mvm = this.DataContext as MainViewModel;
+                    TreeViewItem item = tagTree.SelectedItem as TreeViewItem;
+                    if (item != null)
+                    {
+                        mvm.deleteTag(item.Header as string);
+                    }
+                    mvm.refreshTagTree();
+                }
+
+            }
+
+        }
+
+        #endregion
+
+        #region Model Toolbar Button Handlers
+
+        private void NewModelButton_Click(object sender, RoutedEventArgs e)
+        {
+            MainViewModel mvm = this.DataContext as MainViewModel;
+            mvm.AddModel();
         }
 
         private void RefreshModels_Click(object sender, RoutedEventArgs e)
@@ -265,25 +249,7 @@ namespace ModelViewer
 
         }
 
-        private void DeleteTag_Click(object sender, RoutedEventArgs e)
-        {
-            if (tagTree.SelectedItem != null)
-            {
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this tag? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                {
-                    MainViewModel mvm = this.DataContext as MainViewModel;
-                    TreeViewItem item = tagTree.SelectedItem as TreeViewItem;
-                    if (item != null)
-                    {
-                        mvm.deleteTag(item.Header as string);
-                    }
-                    mvm.refreshTagTree();
-                }
-
-            }
-
-        }
+        #endregion
 
 
     }

@@ -24,7 +24,6 @@
                 <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Header="_Copy XAML" Command="{Binding EditCopyXamlCommand}"/>
                 <MenuItem Header="_Settings" Command="{Binding EditSettingsCommand}" />
             </MenuItem>
             <MenuItem Header="_View">
@@ -103,15 +102,8 @@
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,1,0" MouseDown="UIElement_OnMouseDown">
             <ModelVisual3D x:Name="root1">
-                <!--<helix:CubeVisual3D Fill="Red"/>
-                <helix:GridLinesVisual3D/> -->
                 <helix:DefaultLights/>
                 <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>
-                <!--<helix:FileModelVisual3D Source="{Binding CurrentModelPath, Mode=TwoWay}" ModelLoaded="ModelLoaded"/>-->
-                <!--<helix:Expander3D Expansion="{Binding Expansion}" Content="{Binding CurrentModel}"/>-->
-                <!-- <helix:HelixViewport3D.Triggers>
-                <EventTrigger 
-            </helix:HelixViewport3D.Triggers>-->
             </ModelVisual3D>
         </helix:HelixViewport3D>
         

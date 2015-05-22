@@ -201,9 +201,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Images\Add-New-128.png" />
     <Resource Include="Images\Command-Refresh-128.png" />
     <Resource Include="Images\Delete-128.png" />
