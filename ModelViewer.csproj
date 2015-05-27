@@ -107,6 +107,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Importer\CAVS_ModelImporter.cs" />
+    <Compile Include="Importer\CAVS_ObjReader.cs" />
     <Compile Include="MissingFileDialog.xaml.cs">
       <DependentUpon>MissingFileDialog.xaml</DependentUpon>
     </Compile>
@@ -136,13 +138,14 @@
       <DependentUpon>NewTagDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Observable.cs" />
+    <Compile Include="SubObject.cs" />
+    <Compile Include="SubObjectViewModel.cs" />
     <Compile Include="TagViewModel.cs" />
     <Compile Include="Properties\GlobalAssemblyInfo.cs" />
     <Compile Include="SettingsDialog.xaml.cs">
       <DependentUpon>SettingsDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tag.cs" />
-    <Compile Include="VisualViewModel.cs" />
     <Compile Include="Window1.xaml.cs">
       <DependentUpon>Window1.xaml</DependentUpon>
       <SubType>Code</SubType>

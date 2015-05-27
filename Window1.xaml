@@ -20,6 +20,7 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
                 <MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>
+                <MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />
                 <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
             </MenuItem>
@@ -34,8 +35,14 @@
             </MenuItem>
         </Menu>
 
-        <DockPanel Grid.Row="1" Grid.Column="0">
-            <ToolBarTray DockPanel.Dock="Top">
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+
+            <ToolBarTray Grid.Row="0">
                 <ToolBar>
                     <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New Model">
                         <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
@@ -49,7 +56,7 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <TreeView x:Name="fileTree">
+            <TreeView x:Name="fileTree" Grid.Row="1">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
@@ -57,7 +64,27 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
-        </DockPanel>
+            <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
+
+            <TreeView Grid.Row="2" x:Name="objectsTree" ItemsSource="{Binding SubObjects}">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <EventSetter Event="Selected" Handler="OnSubObjectItemSelected" />
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Name}" />
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+
+        </Grid>
 
         <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 

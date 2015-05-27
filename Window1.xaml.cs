@@ -25,9 +25,10 @@ namespace ModelViewer
     /// </summary>
     public partial class Window1
     {
-
         Point startPoint;
         bool isDragging = false;
+
+        MainViewModel mainViewModel;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Window1"/> class.
@@ -35,12 +36,13 @@ namespace ModelViewer
         public Window1()
         {
             this.InitializeComponent();
-            this.DataContext = new MainViewModel(new FileDialogService(), view1, tagTree, fileTree);
+            mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree, fileTree, objectsTree);
+            this.DataContext = mainViewModel;
         }
 
         private void UIElement_OnMouseDown(object sender, MouseButtonEventArgs e)
         {
-            resetModel();
+            //mainViewModel.resetModel();
 
             var viewport = (HelixViewport3D)sender;
             var firstHit = viewport.Viewport.FindHits(e.GetPosition(viewport)).FirstOrDefault();
@@ -50,16 +52,7 @@ namespace ModelViewer
 
                 var model = firstHit.Model as GeometryModel3D;
 
-                //default state, add the green EM
-                MaterialGroup mg = new MaterialGroup();
-                mg.Children.Add(model.Material);
-                mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
-                model.Material = mg;
-
-                MaterialGroup mgBack = new MaterialGroup();
-                mgBack.Children.Add(model.BackMaterial);
-                mgBack.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
-                model.BackMaterial = mgBack;
+                mainViewModel.selectSubObjectTreeItemByName(model.GetName());
 
                 e.Handled = true;
             }
@@ -67,12 +60,6 @@ namespace ModelViewer
             {
                 System.Console.WriteLine("Didn't click object");
             }
-        }
-
-        private void resetModel()
-        {
-            MainViewModel mvm = this.DataContext as MainViewModel;
-            mvm.resetModel();
         }
 
         private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
@@ -83,10 +70,21 @@ namespace ModelViewer
                 string filename = fileTree.SelectedItem.ToString();
                 filename = filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2);
 
-                MainViewModel mvm = this.DataContext as MainViewModel;
-                mvm.LoadModel(filename);
+                mainViewModel.LoadModel(filename);
             }
 
+        }
+
+        private void OnSubObjectItemSelected(object sender, RoutedEventArgs args)
+        {
+            //highlight subobject
+            TreeViewItem source = args.OriginalSource as TreeViewItem;
+            SubObjectViewModel subObjectView = source.Header as SubObjectViewModel;
+            string subName = subObjectView.Name;
+
+            mainViewModel.highlightObjectByName(subName);
+
+            args.Handled = true;
         }
 
         #region Drag and Drop
@@ -137,8 +135,7 @@ namespace ModelViewer
                 {
                     if (!((string)data.GetData(DataFormats.Text)).Equals(source.Text))
                     {
-                        MainViewModel mvm = this.DataContext as MainViewModel;
-                        mvm.updateParentTag((string)data.GetData(DataFormats.Text), source.Text);
+                        mainViewModel.updateParentTag((string)data.GetData(DataFormats.Text), source.Text);
                     }
                 }
 
@@ -181,16 +178,14 @@ namespace ModelViewer
             NewTagDialog ntd = new NewTagDialog();
             if (ntd.ShowDialog() == true)
             {
-                MainViewModel mvm = this.DataContext as MainViewModel;
-                mvm.addNewTag(ntd.TagName);
-                mvm.refreshTagTree();
+                mainViewModel.addNewTag(ntd.TagName);
+                mainViewModel.refreshTagTree();
             }
         }
 
         private void RefreshTags_Click(object sender, RoutedEventArgs e)
         {
-            MainViewModel mvm = this.DataContext as MainViewModel;
-            mvm.refreshTagTree();
+            mainViewModel.refreshTagTree();
         }
 
         private void DeleteTag_Click(object sender, RoutedEventArgs e)
@@ -200,13 +195,12 @@ namespace ModelViewer
                 MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this tag? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
-                    MainViewModel mvm = this.DataContext as MainViewModel;
                     TreeViewItem item = tagTree.SelectedItem as TreeViewItem;
                     if (item != null)
                     {
-                        mvm.deleteTag(item.Header as string);
+                        mainViewModel.deleteTag(item.Header as string);
                     }
-                    mvm.refreshTagTree();
+                    mainViewModel.refreshTagTree();
                 }
 
             }
@@ -219,14 +213,12 @@ namespace ModelViewer
 
         private void NewModelButton_Click(object sender, RoutedEventArgs e)
         {
-            MainViewModel mvm = this.DataContext as MainViewModel;
-            mvm.AddModel();
+            mainViewModel.AddModel();
         }
 
         private void RefreshModels_Click(object sender, RoutedEventArgs e)
         {
-            MainViewModel mvm = this.DataContext as MainViewModel;
-            mvm.refreshFileTree();
+            mainViewModel.refreshFileTree();
         }
 
         private void DeleteModel_Click(object sender, RoutedEventArgs e)
@@ -236,14 +228,11 @@ namespace ModelViewer
                 MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this model?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
-                    MainViewModel mvm = this.DataContext as MainViewModel;
-                    //TreeViewItem item = fileTree.SelectedItem as TreeViewItem;
-                    //if (item != null)
-                    //{
+                   
                     string filename = fileTree.SelectedItem as string;
-                    mvm.deleteObject(filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2));
-                    //}
-                    mvm.refreshFileTree();
+                    mainViewModel.deleteObject(filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2));
+                   
+                    mainViewModel.refreshFileTree();
                 }
             }
 

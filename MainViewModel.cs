@@ -20,6 +20,10 @@ namespace ModelViewer
     using System.IO;
     using System.Text.RegularExpressions;
     using System.Collections.ObjectModel;
+    using ModelViewer.Importer;
+    using System.Windows.Media.Imaging;
+    using System.Windows.Media;
+
 
     public class MainViewModel : Observable
     {
@@ -45,15 +49,19 @@ namespace ModelViewer
 
         private TreeView fileTree;
 
+        private TreeView subObjectTree;
+
         private MySqlConnection sqlConnection;
 
-        private string modelDirectory = "I:\\projects\\ERS\\Task-04\\tagging\\tagged_objects\\";
+        private static string modelDirectory = "I:\\projects\\ERS\\Task-04\\tagging\\tagged_objects\\";
 
-        private string currentUser;
+        private static string currentUser;
 
         private TagViewModel rootTagView;
 
-        public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree, TreeView fileTree)
+        private SubObjectViewModel rootSubObjectView;
+
+        public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree, TreeView fileTree, TreeView subObjectTree)
         {
             if (viewport == null)
             {
@@ -61,22 +69,18 @@ namespace ModelViewer
             }
             this.tagTree = tagTree;
             this.fileTree = fileTree;
-
+            this.subObjectTree = subObjectTree;
             this.dispatcher = Dispatcher.CurrentDispatcher;
             this.Expansion = 1;
             this.fileDialogService = fds;
             this.viewport = viewport;
             this.FileOpenCommand = new DelegateCommand(this.FileOpen);
             this.FileExportCommand = new DelegateCommand(this.FileExport);
+            this.FileSaveScreenshotCommand = new DelegateCommand(this.FileSaveScreenshot);
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
             this.ApplicationTitle = "3D Model Tagging Tool";
-            this.Elements = new List<VisualViewModel>();
-            foreach (var c in viewport.Children)
-            {
-                this.Elements.Add(new VisualViewModel(c));
-            }
 
             sqlConnection = new MySqlConnection("server=Mitchell.HPC.MsState.Edu; database=cavs_ivp04;Uid=cavs_ivp04_user;Pwd=TLBcEsm7;");
 
@@ -187,6 +191,8 @@ namespace ModelViewer
             fileTree.Items.Add(treeItem2);
         }
 
+        #region Add Model
+
         public async void AddModel()
         {
             string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj"); ;
@@ -202,6 +208,8 @@ namespace ModelViewer
             this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
+
+            displaySubObjects();
         }
 
         private void CopyFiles(string path)
@@ -339,12 +347,49 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        #endregion
+
         public async void LoadModel(string filename)
         {
             this.CurrentModelPath = modelDirectory + filename;
             this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
+
+            //populate sub object display
+            displaySubObjects();
+        }
+
+        private async Task<Model3DGroup> LoadAsync(string model3DPath, bool freeze)
+        {
+            return await Task.Factory.StartNew(() =>
+            {
+                var mi = new CAVS_ModelImporter();
+
+                if (freeze)
+                {
+                    // Alt 1. - freeze the model 
+                    return mi.Load(model3DPath, null, true);
+                }
+
+                // Alt. 2 - create the model on the UI dispatcher
+                return mi.Load(model3DPath, this.dispatcher);
+            });
+        }
+
+        private Model3DGroup Load(string model3DPath, bool freeze)
+        {
+            var mi = new CAVS_ModelImporter();
+
+            if (freeze)
+            {
+                // Alt 1. - freeze the model 
+                return mi.Load(model3DPath, null, true);
+            }
+
+            // Alt. 2 - create the model on the UI dispatcher
+            return mi.Load(model3DPath, this.dispatcher);
+
         }
 
         public void deleteObject(string fileName)
@@ -355,6 +400,50 @@ namespace ModelViewer
 
             //TODO: delete files too
         }
+
+        private void displaySubObjects()
+        {
+            SubObject root = new SubObject("Sub-Objects");
+            foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
+            {
+                SubObject tag = new SubObject(gm.GetName());
+                root.Children.Add(tag);
+            }
+
+            rootSubObjectView = new SubObjectViewModel(root);
+
+            this.RaisePropertyChanged("SubObjects");
+
+            rootSubObjectView.ExpandAll();
+        }
+
+        public void highlightObjectByName(string name)
+        {
+            resetModel();
+
+            foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
+            {
+                if (gm.GetName().Equals(name))
+                {
+
+
+                    MaterialGroup mg = new MaterialGroup();
+                    mg.Children.Add(gm.Material);
+                    mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
+                    gm.Material = mg;
+
+                    MaterialGroup mgBack = new MaterialGroup();
+                    mgBack.Children.Add(gm.BackMaterial);
+                    mgBack.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
+                    gm.BackMaterial = mgBack;
+                }
+            }
+        }
+
+        public void resetModel()
+        {
+            this.CurrentModel = this.Load(this.CurrentModelPath, false);
+        }     
 
         #endregion
 
@@ -369,15 +458,20 @@ namespace ModelViewer
             get { return new ReadOnlyCollection<TagViewModel>(new TagViewModel[] { rootTagView }); }
         }
 
+        public ReadOnlyCollection<SubObjectViewModel> SubObjects
+        {
+            get { return new ReadOnlyCollection<SubObjectViewModel>(new SubObjectViewModel[] { rootSubObjectView }); }
+        }
+
         public string ModelDirectory
         {
             get
             {
-                return this.modelDirectory;
+                return modelDirectory;
             }
             set
             {
-                this.modelDirectory = value;
+                modelDirectory = value;
                 this.RaisePropertyChanged("ModelDirectory");
             }
         }
@@ -386,11 +480,11 @@ namespace ModelViewer
         {
             get
             {
-                return this.currentUser;
+                return currentUser;
             }
             set
             {
-                this.currentUser = value;
+                currentUser = value;
                 this.RaisePropertyChanged("CurrentUser");
             }
         }
@@ -422,8 +516,6 @@ namespace ModelViewer
                 this.RaisePropertyChanged("ApplicationTitle");
             }
         }
-
-        public List<VisualViewModel> Elements { get; set; }
 
         public double Expansion
         {
@@ -464,6 +556,8 @@ namespace ModelViewer
 
         public ICommand FileExportCommand { get; set; }
 
+        public ICommand FileSaveScreenshotCommand { get; set; }
+
         public ICommand FileExitCommand { get; set; }
 
         public ICommand HelpAboutCommand { get; set; }
@@ -494,7 +588,7 @@ namespace ModelViewer
             if (sd.ShowDialog() == true)
             {
                 this.CurrentUser = sd.CurrentUser;
-                this.modelDirectory = sd.ModelDirectoryPath;
+                modelDirectory = sd.ModelDirectoryPath;
             }
         }
 
@@ -511,43 +605,47 @@ namespace ModelViewer
             this.viewport.ZoomExtents(0);
         }
 
+        private void FileSaveScreenshot()
+        {
+            RenderTargetBitmap bmp = new RenderTargetBitmap((int)this.viewport.Viewport.ActualWidth, (int)this.viewport.Viewport.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+
+            System.Windows.Shapes.Rectangle vRect = new System.Windows.Shapes.Rectangle();
+
+            vRect.Width = (int)this.viewport.Viewport.ActualWidth;
+
+            vRect.Height = (int)this.viewport.Viewport.ActualHeight;
+
+            vRect.Fill = Brushes.Black;
+
+            vRect.Arrange(new Rect(0, 0, vRect.Width, vRect.Height));
+
+            bmp.Render(vRect);
+
+            bmp.Render(this.viewport.Viewport);
+
+            PngBitmapEncoder png = new PngBitmapEncoder();
+
+            png.Frames.Add(BitmapFrame.Create(bmp));
+
+            using (Stream stm = File.Create(modelDirectory + Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png"))
+            {
+
+                png.Save(stm);
+
+            }
+        }
+
         #endregion
 
-        public void resetModel()
+        public void selectSubObjectTreeItemByName(string name)
         {
-            this.CurrentModel = this.Load(this.CurrentModelPath, false);
-        }
-
-        private async Task<Model3DGroup> LoadAsync(string model3DPath, bool freeze)
-        {
-            return await Task.Factory.StartNew(() =>
+            foreach (var i in rootSubObjectView.Children)
             {
-                var mi = new ModelImporter();
-
-                if (freeze)
+                if (i.Name.Equals(name))
                 {
-                    // Alt 1. - freeze the model 
-                    return mi.Load(model3DPath, null, true);
+                    i.IsSelected = true;
                 }
-
-                // Alt. 2 - create the model on the UI dispatcher
-                return mi.Load(model3DPath, this.dispatcher);
-            });
-        }
-
-        private Model3DGroup Load(string model3DPath, bool freeze)
-        {
-            var mi = new ModelImporter();
-
-            if (freeze)
-            {
-                // Alt 1. - freeze the model 
-                return mi.Load(model3DPath, null, true);
             }
-
-            // Alt. 2 - create the model on the UI dispatcher
-            return mi.Load(model3DPath, this.dispatcher);
-
         }
     }
 }
