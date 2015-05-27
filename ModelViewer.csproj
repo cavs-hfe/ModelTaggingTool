@@ -137,6 +137,8 @@
     <Compile Include="NewTagDialog.xaml.cs">
       <DependentUpon>NewTagDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ObjectFile.cs" />
+    <Compile Include="ObjectFileViewModel.cs" />
     <Compile Include="Observable.cs" />
     <Compile Include="SubObject.cs" />
     <Compile Include="SubObjectViewModel.cs" />

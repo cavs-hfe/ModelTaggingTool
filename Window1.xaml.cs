@@ -67,10 +67,15 @@ namespace ModelViewer
             //make sure double click on same item
             if (sender is TreeViewItem)
             {
-                string filename = fileTree.SelectedItem.ToString();
-                filename = filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2);
+                TreeViewItem item = sender as TreeViewItem;
+                ObjectFileViewModel ofvm = item.Header as ObjectFileViewModel;
+                string filename = ofvm.FileName;
 
-                mainViewModel.LoadModel(filename);
+                if (!filename.Equals(""))
+                {
+                    mainViewModel.LoadModel(filename);
+                }
+
             }
 
         }

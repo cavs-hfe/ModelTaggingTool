@@ -56,13 +56,24 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <TreeView x:Name="fileTree" Grid.Row="1">
+            <TreeView x:Name="fileTree" Grid.Row="1" ItemsSource="{Binding ObjectFiles}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
                         <Setter Property="IsExpanded" Value="True" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                     </Style>
                 </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding FriendlyName}" />
+                            <TextBlock>(</TextBlock>
+                            <TextBlock Text="{Binding FileName}" />
+                            <TextBlock>)</TextBlock>
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
             </TreeView>
             <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
 

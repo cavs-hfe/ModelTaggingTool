@@ -59,6 +59,8 @@ namespace ModelViewer
 
         private TagViewModel rootTagView;
 
+        private ObjectFileViewModel rootObjectFileView;
+
         private SubObjectViewModel rootSubObjectView;
 
         public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree, TreeView fileTree, TreeView subObjectTree)
@@ -103,7 +105,7 @@ namespace ModelViewer
         public void refreshTagTree()
         {
 
-            Tag rootTag = new Tag(18, "root-tag", -1);
+            Tag rootTag = new Tag(18, "Tags:", -1);
             rootTag = PopulateRootTag(rootTag);
             rootTagView = new TagViewModel(rootTag);
 
@@ -172,23 +174,24 @@ namespace ModelViewer
 
         public void refreshFileTree()
         {
-            fileTree.Items.Clear();
-
             //get files
             string query = "SELECT * FROM Objects";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
 
-            TreeViewItem treeItem2 = new TreeViewItem();
-            treeItem2.Header = "Object";
+            ObjectFile rootFile = new ObjectFile("", "Objects:");
 
             foreach (DataRow row in table.Rows)
             {
-                treeItem2.Items.Add(row["friendly_name"] + " (" + row["file_name"] + ")");
+                rootFile.Children.Add(new ObjectFile((string)row["file_name"], (string)row["friendly_name"]));
             }
 
-            fileTree.Items.Add(treeItem2);
+            rootObjectFileView = new ObjectFileViewModel(rootFile);
+
+            this.RaisePropertyChanged("ObjectFiles");
+
+            rootTagView.ExpandAll();
         }
 
         #region Add Model
@@ -403,7 +406,7 @@ namespace ModelViewer
 
         private void displaySubObjects()
         {
-            SubObject root = new SubObject("Sub-Objects");
+            SubObject root = new SubObject("Sub-Objects:");
             foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
             {
                 SubObject tag = new SubObject(gm.GetName());
@@ -462,6 +465,12 @@ namespace ModelViewer
         {
             get { return new ReadOnlyCollection<SubObjectViewModel>(new SubObjectViewModel[] { rootSubObjectView }); }
         }
+
+        public ReadOnlyCollection<ObjectFileViewModel> ObjectFiles
+        {
+            get { return new ReadOnlyCollection<ObjectFileViewModel>(new ObjectFileViewModel[] { rootObjectFileView }); }
+        }
+
 
         public string ModelDirectory
         {
