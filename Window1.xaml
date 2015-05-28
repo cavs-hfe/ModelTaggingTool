@@ -125,14 +125,13 @@
                         <Setter Property="AllowDrop" Value="True" />
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                        <!--<Setter Property="IsChecked" Value="{Binding IsChecked, Mode=TwoWay}" />-->
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
-                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Name}" />
+                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked, Mode=OneWay}" VerticalAlignment="Center" Content="{Binding Name}" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
+                            <!--TextBlock Text="{Binding Name}" />-->
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>

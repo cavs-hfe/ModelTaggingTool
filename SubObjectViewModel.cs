@@ -88,6 +88,27 @@ namespace ModelViewer
             }
         }
 
+        public SubObjectViewModel GetSelectedItem()
+        {
+            SubObjectViewModel sovm = null;
+            if (this.IsSelected)
+            {
+                sovm = this;
+            }
+            else
+            {
+                foreach (SubObjectViewModel s in this.Children)
+                {
+                    if (s.IsSelected)
+                    {
+                        sovm = s;
+                        break;
+                    }
+                }
+            }
+            return sovm;
+        }
+
         /// <summary>
         /// Gets/sets whether the TreeViewItem 
         /// associated with this object is checked.

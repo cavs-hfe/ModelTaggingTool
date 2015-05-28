@@ -89,6 +89,8 @@ namespace ModelViewer
 
             mainViewModel.highlightObjectByName(subName);
 
+            mainViewModel.showAssignedTags(subName);
+
             args.Handled = true;
         }
 
@@ -191,6 +193,8 @@ namespace ModelViewer
         private void RefreshTags_Click(object sender, RoutedEventArgs e)
         {
             mainViewModel.refreshTagTree();
+
+            mainViewModel.showAssignedTags();
         }
 
         private void DeleteTag_Click(object sender, RoutedEventArgs e)
@@ -245,6 +249,17 @@ namespace ModelViewer
 
         #endregion
 
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
+            mainViewModel.assignTagToObject(source.Id);
+        }
+
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
+            mainViewModel.unassignTagFromObject(source.Id);
+        }
 
     }
 

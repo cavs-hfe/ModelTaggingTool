@@ -102,6 +102,8 @@ namespace ModelViewer
 
         #region Tag Code
 
+        #region Tag Tree Methods
+
         public void refreshTagTree()
         {
 
@@ -132,6 +134,8 @@ namespace ModelViewer
 
             return parentTag;
         }
+
+        #endregion
 
         public void addNewTag(string tag)
         {
@@ -168,6 +172,131 @@ namespace ModelViewer
             refreshTagTree();
         }
 
+        #region Assign Tag
+
+        public void assignTagToObject(int tagID)
+        {
+            //if an object has been loaded
+            if (rootSubObjectView != null)
+            {
+                //check to see what object selected
+                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
+                if (s != null && !s.Name.Equals("Objects:"))
+                {
+                    int fileId = getFileIdByFileName(this.CurrentModelPath);
+                    if (fileId != -1)
+                    {
+                        int objectId = getObjectId(fileId, s.Name);
+                        if (objectId != -1)
+                        {
+                            assignTagToObject(tagID, objectId);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        public void assignTagToObject(int tagID, int objectID)
+        {
+            try
+            {
+                string query = "INSERT INTO Object_Tag (object_id, tag_id, tagged_by, reviewed) VALUES (" + objectID + ", " + tagID + ", '" + CurrentUser + "', 0)";
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+
+            }
+
+        }
+
+        public void unassignTagFromObject(int tagID)
+        {
+            //if an object has been loaded
+            if (rootSubObjectView != null)
+            {
+                //check to see what object selected
+                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
+                if (s != null && !s.Name.Equals("Objects:"))
+                {
+                    int fileId = getFileIdByFileName(this.CurrentModelPath);
+                    if (fileId != -1)
+                    {
+                        int objectId = getObjectId(fileId, s.Name);
+                        if (objectId != -1)
+                        {
+                            unassignTagFromObject(tagID, objectId);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void unassignTagFromObject(int tagID, int objectID)
+        {
+            try
+            {
+                string query = "DELETE FROM Object_Tag WHERE object_id = " + objectID + " AND tag_id = " + tagID;
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+
+            }
+
+        }
+
+        #endregion
+
+        public void showAssignedTags()
+        {
+            //get currently selected object
+            //if an object has been loaded
+            if (rootSubObjectView != null)
+            {
+                //check to see what object selected
+                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
+                if (s != null && !s.Name.Equals("Objects:"))
+                {
+                    showAssignedTags(s.Name);
+                }
+            }
+        }
+
+        public void showAssignedTags(string objectName)
+        {
+            refreshTagTree();
+
+            //get tags for object
+            int fileId = getFileIdByFileName(this.CurrentModelPath);
+            int objectId = getObjectId(fileId, objectName);
+            List<string> tags = getTagsForObject(objectId);
+            foreach (string s in tags)
+            {
+                rootTagView.Check(s);
+            }
+        }
+
+        private List<string> getTagsForObject(int objectId)
+        {
+            List<string> tags = new List<string>();
+
+            string query = "SELECT tag_name FROM Object_Tag, Tags WHERE object_id = " + objectId + " AND Object_Tag.tag_id = Tags.tag_id;";
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            foreach (DataRow row in table.Rows)
+            {
+                tags.Add((string)row["tag_name"]);
+            }
+
+            return tags;
+        }
+
         #endregion
 
         #region Object Code
@@ -175,12 +304,12 @@ namespace ModelViewer
         public void refreshFileTree()
         {
             //get files
-            string query = "SELECT * FROM Objects";
+            string query = "SELECT * FROM Files";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
 
-            ObjectFile rootFile = new ObjectFile("", "Objects:");
+            ObjectFile rootFile = new ObjectFile("", "Files:");
 
             foreach (DataRow row in table.Rows)
             {
@@ -196,7 +325,7 @@ namespace ModelViewer
 
         #region Add Model
 
-        public async void AddModel()
+        public void AddModel()
         {
             string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj"); ;
             //copy model files into new directory
@@ -207,12 +336,7 @@ namespace ModelViewer
 
             refreshFileTree();
 
-            this.CurrentModelPath = modelDirectory + Path.GetFileName(objectFile);
-            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
-            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
-            this.viewport.ZoomExtents(0);
-
-            displaySubObjects();
+            LoadModel(Path.GetFileName(objectFile));
         }
 
         private void CopyFiles(string path)
@@ -345,10 +469,32 @@ namespace ModelViewer
 
         private void addModelToDatabase(string filename)
         {
-            string query = "INSERT INTO Objects (file_name, friendly_name) VALUES ('" + filename + "', 'object');";
+            string query = "INSERT INTO Files (file_name, friendly_name) VALUES ('" + filename + "', 'object');";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
         }
+
+        private void addObjectsToDatabase()
+        {
+            int fileId = getFileIdByFileName(this.currentModelPath);
+
+            foreach (SubObjectViewModel s in rootSubObjectView.Children)
+            {
+                try
+                {
+                    string query = "INSERT INTO Objects (file_id, object_name) VALUES (" + fileId + ", '" + s.Name + "');";
+                    MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine(e.Message);
+                }
+
+            }
+        }
+
+
 
         #endregion
 
@@ -406,7 +552,7 @@ namespace ModelViewer
 
         private void displaySubObjects()
         {
-            SubObject root = new SubObject("Sub-Objects:");
+            SubObject root = new SubObject("Objects:");
             foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
             {
                 SubObject tag = new SubObject(gm.GetName());
@@ -418,6 +564,8 @@ namespace ModelViewer
             this.RaisePropertyChanged("SubObjects");
 
             rootSubObjectView.ExpandAll();
+
+            addObjectsToDatabase();
         }
 
         public void highlightObjectByName(string name)
@@ -443,10 +591,38 @@ namespace ModelViewer
             }
         }
 
+        private void renameObject(string oldName, string newName)
+        {
+            int fileId = getFileIdByFileName(this.CurrentModelPath);
+
+            if (fileId != -1)
+            {
+                int objectId = getObjectId(fileId, oldName);
+                if (objectId != -1)
+                {
+                    string query = "UPDATE Objects SET object_name = '" + newName + "' WHERE object_id = " + objectId;
+                    MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private void setFileFriendlyName(string fileName, string friendlyName)
+        {
+            int fileId = getFileIdByFileName(fileName);
+
+            if (fileId != -1)
+            {
+                string query = "UPDATE Files SET friendly_name = '" + friendlyName + "' WHERE file_id = " + fileId;
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         public void resetModel()
         {
             this.CurrentModel = this.Load(this.CurrentModelPath, false);
-        }     
+        }
 
         #endregion
 
@@ -656,5 +832,41 @@ namespace ModelViewer
                 }
             }
         }
+
+        private int getObjectId(int file_id, string object_name)
+        {
+            string query = "SELECT object_id FROM Objects WHERE file_id = " + file_id + " AND object_name = '" + object_name + "';";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                int objectId = Convert.ToInt32(reader["object_id"]);
+                reader.Close();
+                return objectId;
+            }
+            reader.Close();
+            return -1;
+        }
+
+        private int getFileIdByFileName(string s)
+        {
+            //get file id
+            string query = "SELECT file_id FROM Files WHERE file_name = '" + Path.GetFileName(s) + "';";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                int i = Convert.ToInt32(reader["file_id"]);
+                reader.Close();
+                return i;
+            }
+
+            reader.Close();
+            return -1;
+        }
+
+        
     }
 }

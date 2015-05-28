@@ -19,6 +19,7 @@ namespace ModelViewer
 
         public string FileName { get; set; }
         public string FriendlyName { get; set; }
+        public int ObjectId { get; set; }
 
         public ObjectFile(string fileName, string friendlyName)
         {

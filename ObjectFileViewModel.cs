@@ -47,6 +47,11 @@ namespace ModelViewer
             get { return this.objectFile.FriendlyName; }
         }
 
+        public int ObjectId
+        {
+            get { return this.objectFile.ObjectId; }
+        }
+
         /// <summary>
         /// Gets/sets whether the TreeViewItem 
         /// associated with this object is expanded.

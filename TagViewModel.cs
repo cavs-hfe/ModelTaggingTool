@@ -40,6 +40,16 @@ namespace ModelViewer
             get { return this.tag.Name; }
         }
 
+        public int Id
+        {
+            get { return this.tag.Id; }
+        }
+
+        public int ParentId
+        {
+            get { return this.tag.ParentId; }
+        }
+
         /// <summary>
         /// Gets/sets whether the TreeViewItem 
         /// associated with this object is expanded.
@@ -111,19 +121,25 @@ namespace ModelViewer
             }
         }
 
+        public void Check(string tagName)
+        {
+            if (this.Name.Equals(tagName))
+            {
+                this.IsChecked = true;
+            }
+            else
+            {
+                foreach (TagViewModel t in this.Children)
+                {
+                    t.Check(tagName);
+                }
+            }
+        }
+
         public TagViewModel Parent
         {
             get { return parent; }
         }
-
-        public bool NameContainsText(string text)
-        {
-            if (String.IsNullOrEmpty(text) || String.IsNullOrEmpty(this.Name))
-                return false;
-
-            return this.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) > -1;
-        }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 
