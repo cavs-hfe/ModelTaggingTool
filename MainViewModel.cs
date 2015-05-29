@@ -82,6 +82,7 @@ namespace ModelViewer
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
+            this.RenameObjectCommand = new DelegateCommand(this.RenameObject);
             this.ApplicationTitle = "3D Model Tagging Tool";
 
             CurrentUser = Properties.Settings.Default.CurrentUser;
@@ -353,65 +354,65 @@ namespace ModelViewer
         {
 
             //check to see if file exists
-            if (File.Exists(modelDirectory + Path.GetFileName(path)))
+            if (File.Exists(Path.Combine(modelDirectory, Path.GetFileName(path))))
             {
                 //ask user what to do, overwrite or ignore
                 return;
             }
 
             //copy object file
-            File.Copy(path, modelDirectory + Path.GetFileName(path));
+            File.Copy(path, Path.Combine(modelDirectory, Path.GetFileName(path)));
 
             //copy material files
-            List<string> mtlFiles = FindMtlFiles(modelDirectory + Path.GetFileName(path));
+            List<string> mtlFiles = FindMtlFiles(Path.Combine(modelDirectory, Path.GetFileName(path)));
             foreach (string s in mtlFiles)
             {
                 if (File.Exists(s)) //mtl files stored as full path, just copy the file
                 {
-                    File.Copy(s, modelDirectory + Path.GetFileName(s));
-                    List<string> assets = findAssets(modelDirectory + Path.GetFileName(s));
+                    File.Copy(s, Path.Combine(modelDirectory, Path.GetFileName(s)));
+                    List<string> assets = findAssets(Path.Combine(modelDirectory, Path.GetFileName(s)));
                     foreach (string a in assets)
                     {
-                        if (File.Exists(a) && !File.Exists(modelDirectory + Path.GetFileName(a)))
+                        if (File.Exists(a) && !File.Exists(Path.Combine(modelDirectory, Path.GetFileName(a))))
                         {
-                            File.Copy(a, modelDirectory + Path.GetFileName(a));
+                            File.Copy(a, Path.Combine(modelDirectory, Path.GetFileName(a)));
                         }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(modelDirectory + a))
+                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(modelDirectory,  a)))
                         {
-                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, modelDirectory + a);
+                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(modelDirectory, a));
                         }
-                        else if (!File.Exists(modelDirectory + a))
+                        else if (!File.Exists(Path.Combine(modelDirectory, a)))
                         {
                             //open dialog prompting for file location
                             MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + a);
-                            if (mfd.ShowDialog() == true && !File.Exists(modelDirectory + a))
+                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(modelDirectory, a)))
                             {
-                                File.Copy(mfd.FilePath, modelDirectory + a);
+                                File.Copy(mfd.FilePath, Path.Combine(modelDirectory, a));
                             }
                         }
                     }
                 }
-                else if (File.Exists(Path.GetDirectoryName(path) + "\\" + s) && !File.Exists(modelDirectory + s))
+                else if (File.Exists(Path.GetDirectoryName(path) + "\\" + s) && !File.Exists(Path.Combine(modelDirectory, s)))
                 {
-                    File.Copy(Path.GetDirectoryName(path) + "\\" + s, modelDirectory + s);
-                    List<string> assets = findAssets(modelDirectory + s);
+                    File.Copy(Path.GetDirectoryName(path) + "\\" + s, Path.Combine(modelDirectory, s));
+                    List<string> assets = findAssets(Path.Combine(modelDirectory, s));
                     foreach (string a in assets)
                     {
-                        if (File.Exists(a) && !File.Exists(modelDirectory + Path.GetFileName(a)))
+                        if (File.Exists(a) && !File.Exists(Path.Combine(modelDirectory, Path.GetFileName(a))))
                         {
-                            File.Copy(a, modelDirectory + Path.GetFileName(a));
+                            File.Copy(a, Path.Combine(modelDirectory, Path.GetFileName(a)));
                         }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(modelDirectory + a))
+                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(modelDirectory, a)))
                         {
-                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, modelDirectory + a);
+                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(modelDirectory, a));
                         }
-                        else if (!File.Exists(modelDirectory + a))
+                        else if (!File.Exists(Path.Combine(modelDirectory, a)))
                         {
                             //open dialog prompting for file location
                             MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + a);
-                            if (mfd.ShowDialog() == true && !File.Exists(modelDirectory + a))
+                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(modelDirectory, a)))
                             {
-                                File.Copy(mfd.FilePath, modelDirectory + a);
+                                File.Copy(mfd.FilePath, Path.Combine(modelDirectory, a));
                             }
                         }
                     }
@@ -422,7 +423,7 @@ namespace ModelViewer
                     MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + s + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + s);
                     if (mfd.ShowDialog() == true)
                     {
-                        File.Copy(mfd.FilePath, modelDirectory + s);
+                        File.Copy(mfd.FilePath, Path.Combine(modelDirectory, s));
                     }
                 }
             }
@@ -510,7 +511,7 @@ namespace ModelViewer
 
         public async void LoadModel(string filename)
         {
-            this.CurrentModelPath = modelDirectory + filename;
+            this.CurrentModelPath = Path.Combine(modelDirectory, filename);
             this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
@@ -761,6 +762,8 @@ namespace ModelViewer
 
         public ICommand EditSettingsCommand { get; set; }
 
+        public ICommand RenameObjectCommand { get; set; }
+
         private static void FileExit()
         {
             Application.Current.Shutdown();
@@ -825,12 +828,17 @@ namespace ModelViewer
 
             png.Frames.Add(BitmapFrame.Create(bmp));
 
-            using (Stream stm = File.Create(modelDirectory + Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png"))
+            using (Stream stm = File.Create(Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png")))
             {
 
                 png.Save(stm);
 
             }
+        }
+
+        private void RenameObject()
+        {
+
         }
 
         #endregion
