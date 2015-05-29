@@ -109,14 +109,14 @@
     </ApplicationDefinition>
     <Compile Include="Importer\CAVS_ModelImporter.cs" />
     <Compile Include="Importer\CAVS_ObjReader.cs" />
-    <Compile Include="MissingFileDialog.xaml.cs">
+    <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
       <DependentUpon>MissingFileDialog.xaml</DependentUpon>
     </Compile>
-    <Page Include="NewTagDialog.xaml">
+    <Page Include="Dialogs\NewTagDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="SettingsDialog.xaml">
+    <Page Include="Dialogs\SettingsDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -133,19 +133,19 @@
     <Compile Include="DelegateCommand.cs" />
     <Compile Include="FileDialogService.cs" />
     <Compile Include="IFileDialogService.cs" />
-    <Compile Include="MainViewModel.cs" />
-    <Compile Include="NewTagDialog.xaml.cs">
+    <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="Dialogs\NewTagDialog.xaml.cs">
       <DependentUpon>NewTagDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="ObjectFile.cs" />
-    <Compile Include="ObjectFileViewModel.cs" />
+    <Compile Include="ViewModels\ObjectFileViewModel.cs" />
     <Compile Include="Observable.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SubObject.cs" />
-    <Compile Include="SubObjectViewModel.cs" />
-    <Compile Include="TagViewModel.cs" />
+    <Compile Include="ViewModels\SubObjectViewModel.cs" />
+    <Compile Include="ViewModels\TagViewModel.cs" />
     <Compile Include="Properties\GlobalAssemblyInfo.cs" />
-    <Compile Include="SettingsDialog.xaml.cs">
+    <Compile Include="Dialogs\SettingsDialog.xaml.cs">
       <DependentUpon>SettingsDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tag.cs" />
@@ -153,7 +153,7 @@
       <DependentUpon>Window1.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="MissingFileDialog.xaml">
+    <Page Include="Dialogs\MissingFileDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
