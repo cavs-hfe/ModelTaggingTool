@@ -53,7 +53,7 @@ namespace ModelViewer
 
         private MySqlConnection sqlConnection;
 
-        private static string modelDirectory = "I:\\projects\\ERS\\Task-04\\tagging\\tagged_objects\\";
+        private static string modelDirectory = "";
 
         private static string currentUser;
 
@@ -83,6 +83,16 @@ namespace ModelViewer
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
             this.ApplicationTitle = "3D Model Tagging Tool";
+
+            CurrentUser = Properties.Settings.Default.CurrentUser;
+            ModelDirectory = Properties.Settings.Default.ModelDirectoryPath;
+
+            //check to see if the model directory path is set correctly
+            if (!Directory.Exists(ModelDirectory))
+            {
+                MessageBox.Show("Model directory not set correctly. Please set the correct path to the model directory.", "Invalid Model Directory Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                Settings();
+            }
 
             sqlConnection = new MySqlConnection("server=Mitchell.HPC.MsState.Edu; database=cavs_ivp04;Uid=cavs_ivp04_user;Pwd=TLBcEsm7;");
 
@@ -774,6 +784,9 @@ namespace ModelViewer
             {
                 this.CurrentUser = sd.CurrentUser;
                 modelDirectory = sd.ModelDirectoryPath;
+                Properties.Settings.Default.CurrentUser = sd.CurrentUser;
+                Properties.Settings.Default.ModelDirectoryPath = sd.ModelDirectoryPath;
+                Properties.Settings.Default.Save();
             }
         }
 

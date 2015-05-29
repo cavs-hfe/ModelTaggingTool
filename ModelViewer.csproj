@@ -140,6 +140,7 @@
     <Compile Include="ObjectFile.cs" />
     <Compile Include="ObjectFileViewModel.cs" />
     <Compile Include="Observable.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="SubObject.cs" />
     <Compile Include="SubObjectViewModel.cs" />
     <Compile Include="TagViewModel.cs" />
