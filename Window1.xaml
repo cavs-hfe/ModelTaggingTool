@@ -116,6 +116,11 @@
             </ToolBarTray>
 
             <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}">
+                <TreeView.Resources>
+                    <ContextMenu x:Key="ContextMnu">
+                        <MenuItem x:Name="mnuMarkReviewed" Header="Mark As Reviewed" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuMarkReviewed_Click"/>
+                    </ContextMenu>
+                </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
@@ -125,6 +130,16 @@
                         <Setter Property="AllowDrop" Value="True" />
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}">
+                        </Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReviewed}" Value="False">
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsReviewed}" Value="True">
+                                <Setter Property="FontWeight" Value="Normal" />
+                            </DataTrigger>
+                        </Style.Triggers>
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>

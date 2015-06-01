@@ -237,10 +237,9 @@ namespace ModelViewer
                 MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this model?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
-                   
-                    string filename = fileTree.SelectedItem as string;
-                    mainViewModel.deleteObject(filename.Substring(filename.IndexOf("(") + 1, filename.Length - filename.IndexOf("(") - 2));
-                   
+                    ObjectFileViewModel ofvm = fileTree.SelectedItem as ObjectFileViewModel;
+                    mainViewModel.deleteObject(ofvm.FileName);
+
                     mainViewModel.refreshFileTree();
                 }
             }
