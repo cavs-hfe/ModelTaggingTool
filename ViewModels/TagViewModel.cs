@@ -16,10 +16,12 @@ namespace ModelViewer
         bool isSelected;
         bool isChecked;
 
+        bool isReviewed = true;
 
-        public TagViewModel(Tag tag): this(tag, null)
+        public TagViewModel(Tag tag)
+            : this(tag, null)
         {
-            
+
         }
 
         private TagViewModel(Tag tag, TagViewModel parent)
@@ -134,6 +136,38 @@ namespace ModelViewer
                     t.Check(tagName);
                 }
             }
+        }
+
+        public bool IsReviewed
+        {
+            get { return isReviewed; }
+            set
+            {
+                if (value != isReviewed)
+                {
+                    isReviewed = value;
+                    this.OnPropertyChanged("IsReviewed");
+                }
+            }
+        }
+
+        public TagViewModel GetTagViewModelByName(string tagName)
+        {
+
+            if (this.Name.Equals(tagName))
+            {
+                return this;
+            }
+            foreach (TagViewModel t in this.Children)
+            {
+                TagViewModel m = t.GetTagViewModelByName(tagName);
+                if (m != null)
+                {
+                    return m;
+                }
+            }
+            return null;
+
         }
 
         public TagViewModel Parent

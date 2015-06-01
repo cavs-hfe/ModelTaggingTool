@@ -261,6 +261,15 @@ namespace ModelViewer
             mainViewModel.unassignTagFromObject(source.Id);
         }
 
+        private void mnuMarkReviewed_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
+            TreeViewItem item = cm.PlacementTarget as TreeViewItem;
+            TagViewModel tvm = item.Header as TagViewModel;
+
+            mainViewModel.MarkTagAsReviewed(tvm.Id);
+        }
+
     }
 
 
