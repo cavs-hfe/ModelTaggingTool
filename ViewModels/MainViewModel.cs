@@ -83,6 +83,7 @@ namespace ModelViewer
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
             this.RenameObjectCommand = new DelegateCommand(this.RenameObject);
+            this.MarkTagAsReviewedCommand = new DelegateCommand(this.MarkTagAsReviewed);
             this.ApplicationTitle = "3D Model Tagging Tool";
 
             CurrentUser = Properties.Settings.Default.CurrentUser;
@@ -284,28 +285,27 @@ namespace ModelViewer
             //get tags for object
             int fileId = getFileIdByFileName(this.CurrentModelPath);
             int objectId = getObjectId(fileId, objectName);
-            List<string> tags = getTagsForObject(objectId);
-            foreach (string s in tags)
-            {
-                rootTagView.Check(s);
-            }
-        }
 
-        private List<string> getTagsForObject(int objectId)
-        {
-            List<string> tags = new List<string>();
-
-            string query = "SELECT tag_name FROM Object_Tag, Tags WHERE object_id = " + objectId + " AND Object_Tag.tag_id = Tags.tag_id;";
+            string query = "SELECT tag_name, reviewed FROM Object_Tag, Tags WHERE object_id = " + objectId + " AND Object_Tag.tag_id = Tags.tag_id;";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
 
             foreach (DataRow row in table.Rows)
             {
-                tags.Add((string)row["tag_name"]);
+                //if the root tag is selected, ignore
+                if (!row["tag_name"].Equals("root-tag"))
+                {
+                    TagViewModel tvm = rootTagView.GetTagViewModelByName((string)row["tag_name"]);
+                    tvm.IsChecked = true;
+                    if (Convert.ToInt32(row["reviewed"]) == 0)
+                    {
+                        tvm.IsReviewed = false;
+                    }
+                }
+
             }
 
-            return tags;
         }
 
         #endregion
@@ -338,7 +338,7 @@ namespace ModelViewer
 
         public void AddModel()
         {
-            string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj"); ;
+            string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
             //copy model files into new directory
             CopyFiles(objectFile);
 
@@ -377,7 +377,7 @@ namespace ModelViewer
                         {
                             File.Copy(a, Path.Combine(modelDirectory, Path.GetFileName(a)));
                         }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(modelDirectory,  a)))
+                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(modelDirectory, a)))
                         {
                             File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(modelDirectory, a));
                         }
@@ -764,6 +764,8 @@ namespace ModelViewer
 
         public ICommand RenameObjectCommand { get; set; }
 
+        public ICommand MarkTagAsReviewedCommand { get; set; }
+
         private static void FileExit()
         {
             Application.Current.Shutdown();
@@ -841,7 +843,71 @@ namespace ModelViewer
 
         }
 
+        private void MarkTagAsReviewed()
+        {
+
+        }
+
         #endregion
+
+        public void MarkTagAsReviewed(int tagId)
+        {
+            //check to see what object selected
+            SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
+            if (s != null && !s.Name.Equals("Objects:"))
+            {
+                int fileId = getFileIdByFileName(this.CurrentModelPath);
+                if (fileId != -1)
+                {
+                    int objectId = getObjectId(fileId, s.Name);
+                    if (objectId != -1)
+                    {
+                        if (verifyTagReview(tagId, objectId))
+                        {
+                            reviewTag(tagId, objectId);
+
+                            refreshTagTree();
+
+                            showAssignedTags();
+                        }
+                        else
+                        {
+                            MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+
+                    }
+                }
+            }
+        }
+
+        private bool verifyTagReview(int tagId, int objectId)
+        {
+            string query = "SELECT tagged_by FROM Object_Tag WHERE object_id = " + objectId + " AND tag_id = " + tagId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            bool allowed = false;
+            if (reader.Read())
+            {
+                string taggedBy = (string)reader["tagged_by"];
+                if (!taggedBy.Equals(this.CurrentUser))
+                {
+                    allowed = true;
+                }
+            }
+            reader.Close();
+            return allowed;
+
+        }
+
+        private void reviewTag(int tagId, int objectId)
+        {
+            string query = "UPDATE Object_Tag SET reviewed = 1, reviewed_by = '" + CurrentUser + "' WHERE object_id = " + objectId + " AND tag_id = " + tagId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        
 
         public void selectSubObjectTreeItemByName(string name)
         {
@@ -888,6 +954,6 @@ namespace ModelViewer
             return -1;
         }
 
-        
+
     }
 }
