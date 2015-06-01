@@ -595,7 +595,11 @@ namespace ModelViewer
             foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
             {
                 SubObject tag = new SubObject(gm.GetName());
-                root.Children.Add(tag);
+                if (!duplicateSubObject(root.Children, tag.Name))
+                {
+                    root.Children.Add(tag);
+                }
+
             }
 
             rootSubObjectView = new SubObjectViewModel(root);
@@ -605,6 +609,18 @@ namespace ModelViewer
             rootSubObjectView.ExpandAll();
 
             addObjectsToDatabase();
+        }
+
+        private bool duplicateSubObject(IList<SubObject> children, string name)
+        {
+            foreach (SubObject s in children)
+            {
+                if (s.Name.Equals(name))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void highlightObjectByName(string name)
