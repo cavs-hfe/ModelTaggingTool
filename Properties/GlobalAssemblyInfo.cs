@@ -7,11 +7,11 @@
 using System.Reflection;
 
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyProduct("Helix Toolkit")]
-[assembly: AssemblyCompany("Helix Toolkit")]
-[assembly: AssemblyCopyright("Copyright (C) Helix Toolkit 2010-2014.")]
+[assembly: AssemblyProduct("CAVS 3D Model Tagging Tool")]
+[assembly: AssemblyCompany("Center for Advanced Vehicular Systems")]
+[assembly: AssemblyCopyright("Copyright (C) CAVS 2015.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-[assembly: AssemblyVersion("2014.2.1.1")]
-[assembly: AssemblyFileVersion("2014.2.1.1")]
+[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyFileVersion("1.0")]

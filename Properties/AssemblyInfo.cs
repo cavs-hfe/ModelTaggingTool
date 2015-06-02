@@ -7,7 +7,7 @@
 using System.Reflection;
 using System.Windows;
 
-[assembly: AssemblyTitle("Helix 3D Toolkit model viewer demo")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("CAVS 3D Model Tagging Tool")]
+[assembly: AssemblyDescription("A tool to tag 3D models with descriptive tags.")]
 
 [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]

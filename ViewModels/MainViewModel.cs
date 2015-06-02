@@ -23,6 +23,7 @@ namespace ModelViewer
     using ModelViewer.Importer;
     using System.Windows.Media.Imaging;
     using System.Windows.Media;
+    using ModelViewer.Dialogs;
 
 
     public class MainViewModel : Observable
@@ -82,6 +83,7 @@ namespace ModelViewer
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
+            this.HelpAboutCommand = new DelegateCommand(this.HelpAbout);
             this.RenameObjectCommand = new DelegateCommand(this.RenameObject);
             this.MarkTagAsReviewedCommand = new DelegateCommand(this.MarkTagAsReviewed);
             this.ApplicationTitle = "3D Model Tagging Tool";
@@ -880,6 +882,12 @@ namespace ModelViewer
                 png.Save(stm);
 
             }
+        }
+
+        private void HelpAbout()
+        {
+            AboutBox ab = new AboutBox();
+            ab.ShowDialog();
         }
 
         private void RenameObject()
