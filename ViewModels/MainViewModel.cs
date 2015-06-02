@@ -151,7 +151,7 @@ namespace ModelViewer
 
         public void addNewTag(string tag)
         {
-            string query = "INSERT INTO Tags (tag_name) VALUES ('" + tag + "');";
+            string query = "INSERT INTO Tags (tag_name, parent) VALUES ('" + tag + "', 18);";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
         }

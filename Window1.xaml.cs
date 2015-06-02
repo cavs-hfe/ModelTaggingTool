@@ -120,10 +120,10 @@ namespace ModelViewer
         private void StartDrag(MouseEventArgs e)
         {
             isDragging = true;
-            TagViewModel selected = tagTree.SelectedItem as TagViewModel;
-            if (tagTree.SelectedItem != null)
+            CheckBox checkbox = e.OriginalSource as CheckBox;
+            if (checkbox != null)
             {
-                DataObject data = new DataObject(System.Windows.DataFormats.Text.ToString(), selected.Name);
+                DataObject data = new DataObject(System.Windows.DataFormats.Text.ToString(), checkbox.Content);
                 DragDropEffects de = DragDrop.DoDragDrop(tagTree, data, DragDropEffects.Move);
             }
 
@@ -136,13 +136,12 @@ namespace ModelViewer
 
             if (data.GetDataPresent(DataFormats.Text))
             {
-
-                TextBlock source = e.OriginalSource as TextBlock;
-                if (source != null)
+                TagViewModel tvm = ((TreeViewItem)sender).Header as TagViewModel;
+                if (tvm != null)
                 {
-                    if (!((string)data.GetData(DataFormats.Text)).Equals(source.Text))
+                    if (!((string)data.GetData(DataFormats.Text)).Equals(tvm.Name))
                     {
-                        mainViewModel.updateParentTag((string)data.GetData(DataFormats.Text), source.Text);
+                        mainViewModel.updateParentTag((string)data.GetData(DataFormats.Text), tvm.Name);
                     }
                 }
 
