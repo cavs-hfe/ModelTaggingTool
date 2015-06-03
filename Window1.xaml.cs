@@ -42,6 +42,26 @@ namespace ModelViewer
             this.DataContext = mainViewModel;
         }
 
+        #region Object Loading and Selection
+
+        private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
+        {
+            //make sure double click on same item
+            if (sender is TreeViewItem)
+            {
+                TreeViewItem item = sender as TreeViewItem;
+                ObjectFileViewModel ofvm = item.Header as ObjectFileViewModel;
+                string filename = ofvm.FileName;
+
+                if (!filename.Equals(""))
+                {
+                    mainViewModel.LoadModel(filename);
+                }
+
+            }
+
+        }
+
         private void UIElement_OnMouseDown(object sender, MouseButtonEventArgs e)
         {
             //mainViewModel.resetModel();
@@ -64,24 +84,6 @@ namespace ModelViewer
             }
         }
 
-        private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
-        {
-            //make sure double click on same item
-            if (sender is TreeViewItem)
-            {
-                TreeViewItem item = sender as TreeViewItem;
-                ObjectFileViewModel ofvm = item.Header as ObjectFileViewModel;
-                string filename = ofvm.FileName;
-
-                if (!filename.Equals(""))
-                {
-                    mainViewModel.LoadModel(filename);
-                }
-
-            }
-
-        }
-
         private void OnSubObjectItemSelected(object sender, RoutedEventArgs args)
         {
             //highlight subobject
@@ -95,6 +97,8 @@ namespace ModelViewer
 
             args.Handled = true;
         }
+
+        #endregion
 
         #region Drag and Drop
 

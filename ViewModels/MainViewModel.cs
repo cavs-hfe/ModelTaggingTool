@@ -167,7 +167,7 @@ namespace ModelViewer
 
         public void updateParentTag(int child, int newParent)
         {
-            if (child != newParent)
+            if (child != newParent && !isTagChild(newParent, child))
             {
                 string updateQuery = "UPDATE Tags SET parent = " + newParent + " WHERE tag_id=" + child + ";";
                 MySqlCommand updateCmd = new MySqlCommand(updateQuery, sqlConnection);
@@ -175,6 +175,35 @@ namespace ModelViewer
 
                 refreshTagTree();
             }
+        }
+
+        /// <summary>
+        /// Method to see if tag 1 is a child of tag 2. Used to validate before updating tag parent.
+        /// </summary>
+        /// <param name="tag1"></param>
+        /// <param name="tag2"></param>
+        /// <returns></returns>
+        private bool isTagChild(int tag1, int tag2)
+        {
+            bool isChild = false;
+
+            string query = "SELECT tag_id FROM Tags WHERE parent = " + tag2;
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            foreach (DataRow row in table.Rows)
+            {
+                if (Convert.ToInt32(row["tag_id"]) == tag1)
+                {
+                    isChild = true;
+                    break;
+                }
+                isChild = isTagChild(tag1, Convert.ToInt32(row["tag_id"]));
+            }
+
+
+            return isChild;
         }
 
         #region Assign Tag
