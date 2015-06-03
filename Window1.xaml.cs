@@ -28,6 +28,8 @@ namespace ModelViewer
         Point startPoint;
         bool isDragging = false;
 
+        private double minMouseMoveDragDistance = 16.0;
+
         MainViewModel mainViewModel;
 
         /// <summary>
@@ -106,10 +108,10 @@ namespace ModelViewer
         {
             if (e.LeftButton == MouseButtonState.Pressed && !isDragging)
             {
-                Point position = e.GetPosition(null);
+                Point position = e.GetPosition(tagTree);
 
-                if (Math.Abs(position.X - startPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
-                    Math.Abs(position.Y - startPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
+                if (Math.Abs(position.X - startPoint.X) > minMouseMoveDragDistance ||
+                    Math.Abs(position.Y - startPoint.Y) > minMouseMoveDragDistance)
                 {
                     StartDrag(e);
 
