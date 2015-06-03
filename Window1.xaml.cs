@@ -110,8 +110,8 @@ namespace ModelViewer
             {
                 Point position = e.GetPosition(tagTree);
 
-                if (Math.Abs(position.X - startPoint.X) > minMouseMoveDragDistance ||
-                    Math.Abs(position.Y - startPoint.Y) > minMouseMoveDragDistance)
+                if (Math.Abs(position.X - startPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(position.Y - startPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
                 {
                     StartDrag(e);
 
@@ -122,10 +122,10 @@ namespace ModelViewer
         private void StartDrag(MouseEventArgs e)
         {
             isDragging = true;
-            CheckBox checkbox = e.OriginalSource as CheckBox;
-            if (checkbox != null)
+            TagViewModel source = ((CheckBox)e.OriginalSource).DataContext as TagViewModel;
+            if (source != null)
             {
-                DataObject data = new DataObject(System.Windows.DataFormats.Text.ToString(), checkbox.Content);
+                DataObject data = new DataObject(System.Windows.DataFormats.Text.ToString(), source.Id.ToString());
                 DragDropEffects de = DragDrop.DoDragDrop(tagTree, data, DragDropEffects.Move);
             }
 
@@ -141,10 +141,7 @@ namespace ModelViewer
                 TagViewModel tvm = ((TreeViewItem)sender).Header as TagViewModel;
                 if (tvm != null)
                 {
-                    if (!((string)data.GetData(DataFormats.Text)).Equals(tvm.Name))
-                    {
-                        mainViewModel.updateParentTag((string)data.GetData(DataFormats.Text), tvm.Name);
-                    }
+                    mainViewModel.updateParentTag(Convert.ToInt32(data.GetData(DataFormats.Text)), tvm.Id);
                 }
 
             }

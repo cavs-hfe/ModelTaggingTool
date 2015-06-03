@@ -165,25 +165,16 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
-        public void updateParentTag(string child, string newParent)
+        public void updateParentTag(int child, int newParent)
         {
-            string query = "SELECT tag_id FROM Tags WHERE tag_name = '" + newParent + "';";
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            MySqlDataReader reader = cmd.ExecuteReader();
-
-            if (reader.Read())
+            if (child != newParent)
             {
-                int id = Convert.ToInt32(reader["tag_id"]);
-                reader.Close();
-
-                string updateQuery = "UPDATE Tags SET parent = " + id + " WHERE tag_name='" + child + "';";
+                string updateQuery = "UPDATE Tags SET parent = " + newParent + " WHERE tag_id=" + child + ";";
                 MySqlCommand updateCmd = new MySqlCommand(updateQuery, sqlConnection);
                 updateCmd.ExecuteNonQuery();
+
+                refreshTagTree();
             }
-
-            reader.Close();
-
-            refreshTagTree();
         }
 
         #region Assign Tag
