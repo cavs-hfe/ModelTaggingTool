@@ -414,6 +414,10 @@ namespace ModelViewer
                         {
                             File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(resourceDir, a));
                         }
+                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", a)) && !File.Exists(Path.Combine(resourceDir, a)))
+                        {
+                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", a), Path.Combine(resourceDir, a));
+                        }
                         else if (!File.Exists(Path.Combine(resourceDir, a)))
                         {
                             //open dialog prompting for file location
@@ -438,6 +442,10 @@ namespace ModelViewer
                         else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(resourceDir, a)))
                         {
                             File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(resourceDir, a));
+                        }
+                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", a)) && !File.Exists(Path.Combine(resourceDir, a)))
+                        {
+                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", a), Path.Combine(resourceDir, a));
                         }
                         else if (!File.Exists(Path.Combine(resourceDir, a)))
                         {
