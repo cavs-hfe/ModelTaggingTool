@@ -332,6 +332,68 @@ namespace ModelViewer
 
         }
 
+        #region Review Tags
+
+        public void MarkTagAsReviewed(int tagId)
+        {
+            //check to see what object selected
+            SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
+            if (s != null && !s.Name.Equals("Objects:"))
+            {
+                int fileId = getFileIdByFileName(this.CurrentModelPath);
+                if (fileId != -1)
+                {
+                    int objectId = getObjectId(fileId, s.Name);
+                    if (objectId != -1)
+                    {
+                        if (verifyTagReview(tagId, objectId))
+                        {
+                            reviewTag(tagId, objectId);
+
+                            refreshTagTree();
+
+                            showAssignedTags();
+                        }
+                        else
+                        {
+                            MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+
+                    }
+                }
+            }
+        }
+
+        private bool verifyTagReview(int tagId, int objectId)
+        {
+            string query = "SELECT tagged_by FROM Object_Tag WHERE object_id = " + objectId + " AND tag_id = " + tagId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            bool allowed = false;
+            if (reader.Read())
+            {
+                string taggedBy = (string)reader["tagged_by"];
+                if (!taggedBy.Equals(this.CurrentUser))
+                {
+                    allowed = true;
+                }
+            }
+            reader.Close();
+            return allowed;
+
+        }
+
+        private void reviewTag(int tagId, int objectId)
+        {
+            string query = "UPDATE Object_Tag SET reviewed = 1, reviewed_by = '" + CurrentUser + "' WHERE object_id = " + objectId + " AND tag_id = " + tagId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        #endregion
+
+
         #endregion
 
         #region Object Code
@@ -655,14 +717,12 @@ namespace ModelViewer
 
         public void highlightObjectByName(string name)
         {
-            resetModel();
+            resetModel(false);
 
             foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
             {
                 if (gm.GetName().Equals(name))
                 {
-
-
                     MaterialGroup mg = new MaterialGroup();
                     mg.Children.Add(gm.Material);
                     mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
@@ -704,9 +764,17 @@ namespace ModelViewer
             }
         }
 
-        public void resetModel()
+        public void resetModel(bool resetSubObjects)
         {
             this.CurrentModel = this.Load(this.CurrentModelPath, false);
+            if (resetSubObjects)
+            {
+                foreach (var i in rootSubObjectView.Children)
+                {
+                    i.IsSelected = false;
+                }
+            }
+
         }
 
         #endregion
@@ -929,65 +997,6 @@ namespace ModelViewer
         }
 
         #endregion
-
-        public void MarkTagAsReviewed(int tagId)
-        {
-            //check to see what object selected
-            SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
-            if (s != null && !s.Name.Equals("Objects:"))
-            {
-                int fileId = getFileIdByFileName(this.CurrentModelPath);
-                if (fileId != -1)
-                {
-                    int objectId = getObjectId(fileId, s.Name);
-                    if (objectId != -1)
-                    {
-                        if (verifyTagReview(tagId, objectId))
-                        {
-                            reviewTag(tagId, objectId);
-
-                            refreshTagTree();
-
-                            showAssignedTags();
-                        }
-                        else
-                        {
-                            MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-
-                    }
-                }
-            }
-        }
-
-        private bool verifyTagReview(int tagId, int objectId)
-        {
-            string query = "SELECT tagged_by FROM Object_Tag WHERE object_id = " + objectId + " AND tag_id = " + tagId;
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            MySqlDataReader reader = cmd.ExecuteReader();
-
-            bool allowed = false;
-            if (reader.Read())
-            {
-                string taggedBy = (string)reader["tagged_by"];
-                if (!taggedBy.Equals(this.CurrentUser))
-                {
-                    allowed = true;
-                }
-            }
-            reader.Close();
-            return allowed;
-
-        }
-
-        private void reviewTag(int tagId, int objectId)
-        {
-            string query = "UPDATE Object_Tag SET reviewed = 1, reviewed_by = '" + CurrentUser + "' WHERE object_id = " + objectId + " AND tag_id = " + tagId;
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
-        }
-
-
 
         public void selectSubObjectTreeItemByName(string name)
         {

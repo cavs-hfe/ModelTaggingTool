@@ -80,6 +80,7 @@ namespace ModelViewer
             }
             else
             {
+                mainViewModel.resetModel(true);
                 System.Console.WriteLine("Didn't click object");
             }
         }
