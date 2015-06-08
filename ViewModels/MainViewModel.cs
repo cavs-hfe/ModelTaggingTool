@@ -398,27 +398,133 @@ namespace ModelViewer
 
         #region Object Code
 
+        #region Refresh File Tree
+
         public void refreshFileTree()
         {
-            //get files
-            string query = "SELECT * FROM Files";
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-            DataTable table = new DataTable();
-            adapter.Fill(table);
 
-            ObjectFile rootFile = new ObjectFile("", "Files:");
+            //create the root file object
+            ObjectFile rootFile = new ObjectFile("Files:", "Files:");
 
-            foreach (DataRow row in table.Rows)
-            {
-                rootFile.Children.Add(new ObjectFile((string)row["file_name"], (string)row["friendly_name"]));
-            }
+            //create the sub root file objects
+            ObjectFile unassigned = refreshUnassigned();
+            ObjectFile myFiles = refreshMyFiles();
+            ObjectFile review = refreshReviewable();
+            ObjectFile complete = refreshComplete();
 
+            //add sub roots to root
+            rootFile.Children.Add(unassigned);
+            rootFile.Children.Add(myFiles);
+            rootFile.Children.Add(review);
+            rootFile.Children.Add(complete);
+
+            //convert root file object into view model
             rootObjectFileView = new ObjectFileViewModel(rootFile);
 
             this.RaisePropertyChanged("ObjectFiles");
 
-            rootTagView.ExpandAll();
+            rootObjectFileView.ExpandAll();
         }
+
+        private ObjectFile refreshUnassigned()
+        {
+            ObjectFile unassigned = new ObjectFile("Unassigned:", "Unassigned:");
+            
+            //get files
+            //working query
+            string query = "SELECT * FROM Files";
+            //updated query
+            //string query = "SELECT * FROM Files WHERE current_owner IS NULL";
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            //populate the root file object with database entries
+            foreach (DataRow row in table.Rows)
+            {
+                unassigned.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+            }
+
+            return unassigned;
+        }
+
+        private ObjectFile refreshMyFiles()
+        {
+            ObjectFile myFiles = new ObjectFile("My Files:", "My Files:");
+            try
+            {
+                //get files
+                string query = "SELECT * FROM Files WHERE currrent_owner = '" + this.CurrentUser + "';";
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+
+                //populate the root file object with database entries
+                foreach (DataRow row in table.Rows)
+                {
+                    myFiles.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return myFiles;
+        }
+
+        private ObjectFile refreshReviewable()
+        {
+            ObjectFile review = new ObjectFile("Ready for Review:", "Ready for Review:");
+
+            try
+            {
+                //get files
+                //get all files where the tagged_by is not the current user and link Object_Tag to Object and Object to File
+                string query = "SELECT * FROM Files, Objects, Object_Tag WHERE Object_Tag.tagged_by != '" + this.CurrentUser + "' AND Object_Tag.object_id = Object.object_id AND Object.file_id = File.file_id";
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+
+                //populate the root file object with database entries
+                foreach (DataRow row in table.Rows)
+                {
+                    review.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return review;
+        }
+
+        private ObjectFile refreshComplete()
+        {
+            ObjectFile complete = new ObjectFile("Completed:", "Completed:");
+
+            try
+            {
+                //get files
+                string query = "SELECT * FROM Files WHERE complete = 1";
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+
+                //populate the root file object with database entries
+                foreach (DataRow row in table.Rows)
+                {
+                    complete.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return complete;
+        }
+
+        #endregion
 
         #region Add Model
 

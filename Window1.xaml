@@ -59,7 +59,12 @@
             <TreeView x:Name="fileTree" Grid.Row="1" ItemsSource="{Binding ObjectFiles}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
+                        <EventSetter Event="PreviewMouseMove" Handler="OnPreviewMouseMove" />
+                        <EventSetter Event="DragOver" Handler="OnDragOver" />
+                        <EventSetter Event="Drop" Handler="OnDrop" />
                         <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
+                        <Setter Property="AllowDrop" Value="True" />
                         <Setter Property="IsExpanded" Value="True" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                     </Style>
@@ -67,10 +72,7 @@
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding FriendlyName}" />
-                            <TextBlock>(</TextBlock>
                             <TextBlock Text="{Binding FileName}" />
-                            <TextBlock>)</TextBlock>
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>

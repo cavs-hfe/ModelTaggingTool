@@ -49,7 +49,7 @@ namespace ModelViewer
 
         public int ObjectId
         {
-            get { return this.objectFile.ObjectId; }
+            get { return this.objectFile.FileId; }
         }
 
         /// <summary>
