@@ -18,9 +18,11 @@ namespace ModelViewer
         }
 
         public string Name { get; set; }
+        public int Id { get; set; }
 
-        public SubObject(string name)
+        public SubObject(int id, string name)
         {
+            this.Id = id;
             this.Name = name;
         }
 

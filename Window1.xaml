@@ -2,7 +2,74 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helix="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
-        xmlns:modelViewer="clr-namespace:ModelViewer" Title="{Binding ApplicationTitle}" Height="600" Width="800" Background="Black">
+        xmlns:modelViewer="clr-namespace:ModelViewer" Title="{Binding ApplicationTitle}" Height="600" Width="1200" Background="LightGray">
+    <Window.Resources>
+        <DataTemplate x:Key="fileTemplate">
+            <WrapPanel>
+                <Image Width="16">
+                    <Image.Style>
+                        <Style TargetType="{x:Type Image}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasScreenshot}" Value="False">
+                                    <Setter Property="Source" Value="/Images/No-Screenshot-32.png"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding HasScreenshot}" Value="True">
+                                    <Setter Property="Source" Value="/Images/Screenshot-32.png"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+                <Image Width="16">
+                    <Image.Style>
+                        <Style TargetType="{x:Type Image}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasTags}" Value="False">
+                                    <Setter Property="Source" Value="/Images/No-Tag-32.png"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding HasTags}" Value="True">
+                                    <Setter Property="Source" Value="/Images/Tag-Approved-32.png"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+                <TextBlock Text="{Binding FileName}" />
+            </WrapPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="screenshotTemplate">
+            <Image Width="16">
+                <Image.Style>
+                    <Style TargetType="{x:Type Image}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasScreenshot}" Value="False">
+                                <Setter Property="Source" Value="/Images/No-Screenshot-32.png"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasScreenshot}" Value="True">
+                                <Setter Property="Source" Value="/Images/Screenshot-32.png"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </DataTemplate>
+        <DataTemplate x:Key="tagTemplate">
+            <Image Width="16">
+                <Image.Style>
+                    <Style TargetType="{x:Type Image}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasTags}" Value="False">
+                                <Setter Property="Source" Value="/Images/No-Tag-32.png"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasTags}" Value="True">
+                                <Setter Property="Source" Value="/Images/Tag-Approved-32.png"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
 
         <Grid.RowDefinitions>
@@ -20,12 +87,14 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
                 <MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>
+                <MenuItem Header="Export XML" Command="{Binding FileExportXMLCommand}" />
                 <MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />
                 <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Header="_Settings" Command="{Binding EditSettingsCommand}" />
+                <MenuItem Header="Check Data Validity..." Command="{Binding CheckDataValidityCommand}" />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Zoom extents" Command="{Binding ViewZoomExtentsCommand}"/>
@@ -38,48 +107,134 @@
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="1*" />
             </Grid.RowDefinitions>
 
             <ToolBarTray Grid.Row="0">
                 <ToolBar>
-                    <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New Model">
+                    <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New File">
                         <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
                     </Button>
-                    <Button x:Name="RefreshModels" Click="RefreshModels_Click" ToolTip="Refresh Models">
-                        <Image Source="/Images/Command-Refresh-128.png" Width="25" Height="25" />
+                    <Button x:Name="RefreshModels" Click="RefreshModels_Click" ToolTip="Refresh Files">
+                        <Image Source="/Images/Command-Refresh-32.png" Width="25" Height="25" />
                     </Button>
-                    <Button x:Name="DeleteModel" Click="DeleteModel_Click" ToolTip="Delete Selected Model">
-                        <Image Source="/Images/Delete-128.png" Width="25" Height="25" />
+                    <Button x:Name="DeleteModel" Click="DeleteModel_Click" ToolTip="Delete Selected File">
+                        <Image Source="/Images/Garbage-Closed-32.png" Width="25" Height="25" />
                     </Button>
+                    <Separator />
+                    <Button x:Name="AssignMeButton" Click="AssignMeButton_Click" ToolTip="Assign to Me">
+                        <Image Source="/Images/User-Profile-32.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="AssignOtherButton" Click="AssignOtherButton_Click"  ToolTip="Assign to Other">
+                        <Image Source="/Images/User-Group-32.png" Width="25" Height="25" />
+                    </Button>
+                    <Separator />
+                    <Button x:Name="MarkReadyButton" Click="MarkReadyButton_Click" ToolTip="Ready for Approval">
+                        <Image Source="/Images/Navigation-Right-32.png" Width="25" Height="25" />
+                    </Button>
+                    <Separator />
+                    <Button x:Name="ApproveButton" Click="ApproveButton_Click" ToolTip="Approve Tagging">
+                        <Image Source="/Images/Check-32.png" Width="25" Height="25" />
+                    </Button>
+                    <!--<Separator />
+                    <Button x:Name="SortAscButton" Click="SortAscButton_Click"  ToolTip="Sort Ascending">
+                        <Image Source="/Images/Sort-Ascending-32.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="SortDescButton" Click="SortDescButton_Click"  ToolTip="Sort Descending">
+                        <Image Source="/Images/Sort-Descending-32.png" Width="25" Height="25" />
+                    </Button>-->
                 </ToolBar>
             </ToolBarTray>
 
-            <TreeView x:Name="fileTree" Grid.Row="1" ItemsSource="{Binding ObjectFiles}">
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
-                        <EventSetter Event="PreviewMouseMove" Handler="OnPreviewMouseMove" />
-                        <EventSetter Event="DragOver" Handler="OnDragOver" />
-                        <EventSetter Event="Drop" Handler="OnDrop" />
-                        <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
-                        <Setter Property="AllowDrop" Value="True" />
-                        <Setter Property="IsExpanded" Value="True" />
-                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                    </Style>
-                </TreeView.ItemContainerStyle>
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding FileName}" />
-                        </StackPanel>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-            </TreeView>
-            <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
+            <TextBlock Grid.Row="1">Files:</TextBlock>
+            
+            <TabControl x:Name="filesTabControl" Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
+                <TabItem x:Name="UnassignedTab" Header="Unassigned">
+                    <ListView x:Name="unassignedListView" ItemsSource="{Binding UnassignedFiles}" SelectionChanged="ListView_SelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="SS" Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader> 
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Tag" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="200" DisplayMemberBinding="{Binding FileName}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Filename" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </TabItem>
+                <TabItem x:Name="MyFilesTab" Header="My Files">
+                    <ListView ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    </ListView>
+                </TabItem>
+                <TabItem x:Name="ReviewTab" Header="Review">
+                    <ListView ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    </ListView>
+                </TabItem>
+                <TabItem x:Name="ApprovedTab" Header="Approved">
+                    <ListView ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    </ListView>
+                </TabItem>
+            </TabControl>
 
-            <TreeView Grid.Row="2" x:Name="objectsTree" ItemsSource="{Binding SubObjects}">
+            <!--<TreeView x:Name="fileTree" ItemsSource="{Binding ObjectFiles}">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
+                                <Setter Property="IsExpanded" Value="True" />
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding FileName}" />
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>-->
+            
+            <GridSplitter Grid.Row="2" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
+
+            <TextBlock Grid.Row="3">Objects:</TextBlock>
+            
+            <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged" SelectionMode="Single">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <WrapPanel>
+                            <Image Width="16">
+                                <Image.Style>
+                                    <Style TargetType="{x:Type Image}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasTags}" Value="False">
+                                                <Setter Property="Source" Value="/Images/No-Tag-32.png"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding HasTags}" Value="True">
+                                                <Setter Property="Source" Value="/Images/Tag-Approved-32.png"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                            <TextBlock Text="{Binding Name}" />
+                        </WrapPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            
+            <!--<TreeView Grid.Row="2" x:Name="objectsTree" ItemsSource="{Binding SubObjects}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="Selected" Handler="OnSubObjectItemSelected" />
@@ -94,7 +249,7 @@
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
-            </TreeView>
+            </TreeView>-->
 
 
         </Grid>
@@ -102,14 +257,14 @@
         <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 
         <DockPanel Grid.Row="1" Grid.Column="2" >
-
+            
             <ToolBarTray DockPanel.Dock="Top">
                 <ToolBar>
                     <Button x:Name="NewTagButton" Click="NewTagButton_Click" ToolTip="Add New Tag">
                         <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
                     </Button>
                     <Button x:Name="RefreshTags" Click="RefreshTags_Click" ToolTip="Refresh Tags">
-                        <Image Source="/Images/Command-Refresh-128.png" Width="25" Height="25" />
+                        <Image Source="/Images/Command-Refresh-32.png" Width="25" Height="25" />
                     </Button>
                     <Button x:Name="DeleteTag" Click="DeleteTag_Click" ToolTip="Delete Selected Tag">
                         <Image Source="/Images/Delete-128.png" Width="25" Height="25" />
@@ -118,11 +273,11 @@
             </ToolBarTray>
 
             <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}">
-                <TreeView.Resources>
+                <!--<TreeView.Resources>
                     <ContextMenu x:Key="ContextMnu">
                         <MenuItem x:Name="mnuMarkReviewed" Header="Mark As Reviewed" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuMarkReviewed_Click"/>
                     </ContextMenu>
-                </TreeView.Resources>
+                </TreeView.Resources>-->
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
@@ -132,8 +287,8 @@
                         <Setter Property="AllowDrop" Value="True" />
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                        <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}">
-                        </Setter>
+                        <Setter Property="IsEnabled" Value="{Binding IsEnabled, Mode=OneWay}" />
+                        <!--<Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsReviewed}" Value="False">
                                 <Setter Property="FontWeight" Value="Bold" />
@@ -141,7 +296,7 @@
                             <DataTrigger Binding="{Binding IsReviewed}" Value="True">
                                 <Setter Property="FontWeight" Value="Normal" />
                             </DataTrigger>
-                        </Style.Triggers>
+                        </Style.Triggers>-->
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
@@ -157,7 +312,7 @@
 
         <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 
-        <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,1,0" MouseDown="UIElement_OnMouseDown">
+        <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,0,1" MouseDown="UIElement_OnMouseDown" Background="Black">
             <ModelVisual3D x:Name="root1">
                 <helix:DefaultLights/>
                 <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>

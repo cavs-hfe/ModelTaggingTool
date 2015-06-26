@@ -1,0 +1,51 @@
+﻿<Window x:Class="ModelViewer.Dialogs.CheckValidityDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Validity Check" Height="300" Width="500">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+        
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" TextWrapping="Wrap">
+            Use this interface to check the validity of the model database and directory.
+        </TextBlock>
+        
+        <Grid Grid.Row="1" Grid.Column="0" Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" TextWrapping="Wrap">These items have directories in the model directory, but no matching database entry:</TextBlock>
+            <ListView Grid.Row="1" x:Name="directoryListView" />
+            <Button Grid.Row="2" x:Name="purgeDirectories" Click="purgeDirectories_Click">Purge Directories</Button>
+        </Grid>
+
+        <Grid Grid.Row="1" Grid.Column="1" Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" TextWrapping="Wrap">These items have directories in the model directory, but no matching database entry:</TextBlock>
+            <ListView Grid.Row="1" x:Name="databaseEntriesListView" />
+            <Button Grid.Row="2" x:Name="purgeDatabaseEntries" Click="purgeDatabaseEntries_Click">Purge Entries</Button>
+        </Grid>
+
+        <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,5,0,0">
+            <Button Name="btnRefresh" Click="btnRefresh_Click" MinWidth="60" Margin="0,0,10,0" IsEnabled="False">Refresh</Button>
+            <Button IsDefault="True" Name="btnDialogOk" Click="btnDialogOk_Click"  MinWidth="60" Margin="0,0,10,0">Ok</Button>
+            <Button IsCancel="True" MinWidth="60">Cancel</Button>
+        </WrapPanel>
+
+    </Grid>
+</Window>

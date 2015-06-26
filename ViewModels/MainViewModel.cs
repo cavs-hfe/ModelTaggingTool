@@ -24,6 +24,10 @@ namespace ModelViewer
     using System.Windows.Media.Imaging;
     using System.Windows.Media;
     using ModelViewer.Dialogs;
+    using System.Windows.Data;
+    using System.Threading;
+    using Microsoft.WindowsAPICodePack.Dialogs;
+    using System.Xml;
 
 
     public class MainViewModel : Observable
@@ -48,10 +52,6 @@ namespace ModelViewer
 
         private TreeView tagTree;
 
-        private TreeView fileTree;
-
-        private TreeView subObjectTree;
-
         private MySqlConnection sqlConnection;
 
         private static string modelDirectory = "";
@@ -60,25 +60,30 @@ namespace ModelViewer
 
         private TagViewModel rootTagView;
 
-        private ObjectFileViewModel rootObjectFileView;
+        private List<ObjectFile> unassignedFileList;
 
-        private SubObjectViewModel rootSubObjectView;
+        private List<ObjectFile> myFileList;
 
-        public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree, TreeView fileTree, TreeView subObjectTree)
+        private List<ObjectFile> reviewFileList;
+
+        private List<ObjectFile> approvedFileList;
+
+        private List<SubObject> subObjectList = new List<SubObject>();
+
+        public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree)
         {
             if (viewport == null)
             {
                 throw new ArgumentNullException("viewport");
             }
             this.tagTree = tagTree;
-            this.fileTree = fileTree;
-            this.subObjectTree = subObjectTree;
             this.dispatcher = Dispatcher.CurrentDispatcher;
             this.Expansion = 1;
             this.fileDialogService = fds;
             this.viewport = viewport;
             this.FileOpenCommand = new DelegateCommand(this.FileOpen);
             this.FileExportCommand = new DelegateCommand(this.FileExport);
+            this.FileExportXMLCommand = new DelegateCommand(this.FileExportXML);
             this.FileSaveScreenshotCommand = new DelegateCommand(this.FileSaveScreenshot);
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
@@ -86,6 +91,7 @@ namespace ModelViewer
             this.HelpAboutCommand = new DelegateCommand(this.HelpAbout);
             this.RenameObjectCommand = new DelegateCommand(this.RenameObject);
             this.MarkTagAsReviewedCommand = new DelegateCommand(this.MarkTagAsReviewed);
+            this.CheckDataValidityCommand = new DelegateCommand(this.checkValidityOfDatabase);
             this.ApplicationTitle = "3D Model Tagging Tool";
 
             CurrentUser = Properties.Settings.Default.CurrentUser;
@@ -106,7 +112,7 @@ namespace ModelViewer
 
                 refreshTagTree();
 
-                refreshFileTree();
+                refreshFileLists();
             }
             catch (Exception e)
             {
@@ -208,32 +214,7 @@ namespace ModelViewer
 
         #region Assign Tag
 
-        public void assignTagToObject(int tagID)
-        {
-            //if an object has been loaded
-            if (rootSubObjectView != null)
-            {
-                //check to see what object selected
-                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
-                if (s != null && !s.Name.Equals("Objects:"))
-                {
-                    int fileId = getFileIdByFileName(this.CurrentModelPath);
-                    if (fileId != -1)
-                    {
-                        int objectId = getObjectId(fileId, s.Name);
-                        if (objectId != -1)
-                        {
-                            assignTagToObject(tagID, objectId);
-                        }
-                    }
-                }
-            }
-
-            showAssignedTags();
-
-        }
-
-        public void assignTagToObject(int tagID, int objectID)
+        public void assignTagToObject(int objectID, int tagID)
         {
             try
             {
@@ -243,34 +224,12 @@ namespace ModelViewer
             }
             catch (Exception e)
             {
-
+                Console.WriteLine(e.Message);
             }
 
         }
 
-        public void unassignTagFromObject(int tagID)
-        {
-            //if an object has been loaded
-            if (rootSubObjectView != null)
-            {
-                //check to see what object selected
-                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
-                if (s != null && !s.Name.Equals("Objects:"))
-                {
-                    int fileId = getFileIdByFileName(this.CurrentModelPath);
-                    if (fileId != -1)
-                    {
-                        int objectId = getObjectId(fileId, s.Name);
-                        if (objectId != -1)
-                        {
-                            unassignTagFromObject(tagID, objectId);
-                        }
-                    }
-                }
-            }
-        }
-
-        public void unassignTagFromObject(int tagID, int objectID)
+        public void unassignTagFromObject(int objectID, int tagID)
         {
             try
             {
@@ -280,35 +239,16 @@ namespace ModelViewer
             }
             catch (Exception e)
             {
-
+                Console.WriteLine(e.Message);
             }
 
         }
 
         #endregion
 
-        public void showAssignedTags()
-        {
-            //get currently selected object
-            //if an object has been loaded
-            if (rootSubObjectView != null)
-            {
-                //check to see what object selected
-                SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
-                if (s != null && !s.Name.Equals("Objects:"))
-                {
-                    showAssignedTags(s.Name);
-                }
-            }
-        }
-
-        public void showAssignedTags(string objectName)
+        public void showAssignedTags(int objectId)
         {
             refreshTagTree();
-
-            //get tags for object
-            int fileId = getFileIdByFileName(this.CurrentModelPath);
-            int objectId = getObjectId(fileId, objectName);
 
             string query = "SELECT tag_name, reviewed FROM Object_Tag, Tags WHERE object_id = " + objectId + " AND Object_Tag.tag_id = Tags.tag_id;";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
@@ -334,33 +274,19 @@ namespace ModelViewer
 
         #region Review Tags
 
-        public void MarkTagAsReviewed(int tagId)
+        public void MarkTagAsReviewed(int tagId, int objectId)
         {
-            //check to see what object selected
-            SubObjectViewModel s = rootSubObjectView.GetSelectedItem();
-            if (s != null && !s.Name.Equals("Objects:"))
+            if (verifyTagReview(tagId, objectId))
             {
-                int fileId = getFileIdByFileName(this.CurrentModelPath);
-                if (fileId != -1)
-                {
-                    int objectId = getObjectId(fileId, s.Name);
-                    if (objectId != -1)
-                    {
-                        if (verifyTagReview(tagId, objectId))
-                        {
-                            reviewTag(tagId, objectId);
+                reviewTag(tagId, objectId);
 
-                            refreshTagTree();
+                refreshTagTree();
 
-                            showAssignedTags();
-                        }
-                        else
-                        {
-                            MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-
-                    }
-                }
+                showAssignedTags(objectId);
+            }
+            else
+            {
+                MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -400,41 +326,25 @@ namespace ModelViewer
 
         #region Refresh File Tree
 
-        public void refreshFileTree()
+        public void refreshFileLists()
         {
-
-            //create the root file object
-            ObjectFile rootFile = new ObjectFile("Files:", "Files:");
 
             //create the sub root file objects
-            ObjectFile unassigned = refreshUnassigned();
-            ObjectFile myFiles = refreshMyFiles();
-            ObjectFile review = refreshReviewable();
-            ObjectFile complete = refreshComplete();
-
-            //add sub roots to root
-            rootFile.Children.Add(unassigned);
-            rootFile.Children.Add(myFiles);
-            rootFile.Children.Add(review);
-            rootFile.Children.Add(complete);
-
-            //convert root file object into view model
-            rootObjectFileView = new ObjectFileViewModel(rootFile);
-
-            this.RaisePropertyChanged("ObjectFiles");
-
-            rootObjectFileView.ExpandAll();
+            refreshUnassigned();
+            refreshMyFiles();
+            refreshReviewable();
+            refreshComplete();
         }
 
-        private ObjectFile refreshUnassigned()
+        private void refreshUnassigned()
         {
-            ObjectFile unassigned = new ObjectFile("Unassigned:", "Unassigned:");
-            
+            unassignedFileList = new List<ObjectFile>();
+
             //get files
             //working query
-            string query = "SELECT * FROM Files";
+            //string query = "SELECT * FROM Files";
             //updated query
-            //string query = "SELECT * FROM Files WHERE current_owner IS NULL";
+            string query = "SELECT * FROM Files WHERE `current_user` IS NULL AND review_ready = 0";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
@@ -442,19 +352,33 @@ namespace ModelViewer
             //populate the root file object with database entries
             foreach (DataRow row in table.Rows)
             {
-                unassigned.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
+                adapter = new MySqlDataAdapter(query2, sqlConnection);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+
+                if (dt.Rows.Count > 0)
+                {
+                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                }
+                else
+                {
+                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                }
+
             }
 
-            return unassigned;
+            this.RaisePropertyChanged("UnassignedFiles");
         }
 
-        private ObjectFile refreshMyFiles()
+        private void refreshMyFiles()
         {
-            ObjectFile myFiles = new ObjectFile("My Files:", "My Files:");
+            myFileList = new List<ObjectFile>();
+
             try
             {
                 //get files
-                string query = "SELECT * FROM Files WHERE currrent_owner = '" + this.CurrentUser + "';";
+                string query = "SELECT * FROM Files WHERE `current_user` = '" + this.CurrentUser + "';";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -462,7 +386,19 @@ namespace ModelViewer
                 //populate the root file object with database entries
                 foreach (DataRow row in table.Rows)
                 {
-                    myFiles.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                    string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
+                    adapter = new MySqlDataAdapter(query2, sqlConnection);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
+                    else
+                    {
+                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
                 }
 
             }
@@ -470,18 +406,22 @@ namespace ModelViewer
             {
                 Console.WriteLine(e.Message);
             }
-            return myFiles;
+
+            this.RaisePropertyChanged("MyFiles");
+
         }
 
-        private ObjectFile refreshReviewable()
+        private void refreshReviewable()
         {
-            ObjectFile review = new ObjectFile("Ready for Review:", "Ready for Review:");
+            reviewFileList = new List<ObjectFile>();
 
             try
             {
                 //get files
                 //get all files where the tagged_by is not the current user and link Object_Tag to Object and Object to File
-                string query = "SELECT * FROM Files, Objects, Object_Tag WHERE Object_Tag.tagged_by != '" + this.CurrentUser + "' AND Object_Tag.object_id = Object.object_id AND Object.file_id = File.file_id";
+                //string query = "SELECT * FROM Files, Objects, Object_Tag WHERE Object_Tag.tagged_by != '" + this.CurrentUser + "' AND Object_Tag.object_id = Object.object_id AND Object.file_id = File.file_id";
+                //get all files ready to review
+                string query = "SELECT * FROM Files WHERE review_ready = 1 AND reviewed_by IS NULL;";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -489,24 +429,38 @@ namespace ModelViewer
                 //populate the root file object with database entries
                 foreach (DataRow row in table.Rows)
                 {
-                    review.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                    string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
+                    adapter = new MySqlDataAdapter(query2, sqlConnection);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
+                    else
+                    {
+                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
+
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-            return review;
+
+            this.RaisePropertyChanged("ReviewFiles");
         }
 
-        private ObjectFile refreshComplete()
+        private void refreshComplete()
         {
-            ObjectFile complete = new ObjectFile("Completed:", "Completed:");
+            approvedFileList = new List<ObjectFile>();
 
             try
             {
                 //get files
-                string query = "SELECT * FROM Files WHERE complete = 1";
+                string query = "SELECT * FROM Files WHERE reviewed_by IS NOT NULL;";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -514,14 +468,27 @@ namespace ModelViewer
                 //populate the root file object with database entries
                 foreach (DataRow row in table.Rows)
                 {
-                    complete.Children.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), (string)row["file_name"], (string)row["friendly_name"], Convert.ToBoolean(row["screenshot"])));
+                    string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
+                    adapter = new MySqlDataAdapter(query2, sqlConnection);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
+                    else
+                    {
+                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    }
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-            return complete;
+
+            this.RaisePropertyChanged("ApprovedFiles");
         }
 
         #endregion
@@ -530,23 +497,60 @@ namespace ModelViewer
 
         public void AddModel()
         {
-            string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
+            // Create OpenFileDialog 
+            CommonOpenFileDialog ofd = new CommonOpenFileDialog();
+
+            ofd.IsFolderPicker = false;
+            ofd.Multiselect = true;
+            ofd.Title = "Select Object Files";
+
+            ofd.Filters.Add(new CommonFileDialogFilter("3D model files (*.3ds;*.obj;*.lwo;*.stl)", ".3ds,.obj,.objz,.lwo,.stl"));
+            //ofd.Filters.Add(new CommonFileDialogFilter("All Files (*.*)", ".*"));
+
+            // Get the selected file name and display in a TextBox 
+            if (ofd.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                foreach (string s in ofd.FileNames)
+                {
+                    if (CopyFiles(s))
+                    {
+                        //add to database
+                        addModelToDatabase(Path.GetFileName(s));
+
+                        refreshFileLists();
+
+                        LoadModel(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(s), Path.GetFileName(s)));
+
+                        addObjectsToDatabase();
+
+                        refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
+                    }
+                }
+
+            }
+
+            /*string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
             //copy model files into new directory
             if (objectFile != null)
             {
-                CopyFiles(objectFile);
+                if (CopyFiles(objectFile))
+                {
+                    //add to database
+                    addModelToDatabase(Path.GetFileName(objectFile));
 
-                //add to database
-                addModelToDatabase(Path.GetFileName(objectFile));
+                    refreshFileLists();
 
-                refreshFileTree();
+                    LoadModel(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(objectFile), Path.GetFileName(objectFile)));
 
-                LoadModel(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(objectFile), Path.GetFileName(objectFile)));
-            }
+                    addObjectsToDatabase();
+
+                    refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
+                }
+            }*/
 
         }
 
-        private void CopyFiles(string path)
+        private bool CopyFiles(string path)
         {
             string resourceDir = Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(path));
 
@@ -555,7 +559,9 @@ namespace ModelViewer
             if (Directory.Exists(resourceDir))
             {
                 //ask user what to do, overwrite or ignore
-                return;
+                MessageBox.Show("This file has already been added. Please delete the old version if you wish to replace it. NOTE: All taggings for the old object will be lost",
+                    "File Already Exists", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
 
             //create path for resources
@@ -603,25 +609,25 @@ namespace ModelViewer
                     List<string> assets = findAssets(Path.Combine(resourceDir, s));
                     foreach (string a in assets)
                     {
-                        if (File.Exists(a) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a))))
+                        if (File.Exists(a) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //if the file path is explicit and is not already in the resource dir
                         {
                             File.Copy(a, Path.Combine(resourceDir, Path.GetFileName(a)));
                         }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(resourceDir, a)))
+                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + Path.GetFileName(a)) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //else if the file exists in the same directory as the mtl file and it is not already in the resource dir
                         {
                             File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(resourceDir, a));
                         }
-                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", a)) && !File.Exists(Path.Combine(resourceDir, a)))
+                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", Path.GetFileName(a))) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //else if the file is in the assets directory and is not in the resource dir
                         {
-                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", a), Path.Combine(resourceDir, a));
+                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", Path.GetFileName(a)), Path.Combine(resourceDir, Path.GetFileName(a)));
                         }
                         else if (!File.Exists(Path.Combine(resourceDir, a)))
                         {
                             //open dialog prompting for file location
                             MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + a);
-                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(resourceDir, a)))
+                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a))))
                             {
-                                File.Copy(mfd.FilePath, Path.Combine(resourceDir, a));
+                                File.Copy(mfd.FilePath, Path.Combine(resourceDir, Path.GetFileName(a)));
                             }
                         }
                     }
@@ -636,6 +642,7 @@ namespace ModelViewer
                     }
                 }
             }
+            return true;
 
         }
 
@@ -699,7 +706,7 @@ namespace ModelViewer
 
         private void addModelToDatabase(string filename)
         {
-            string query = "INSERT INTO Files (file_name, friendly_name) VALUES ('" + filename + "', 'object');";
+            string query = "INSERT INTO Files (file_name, friendly_name, uploaded_by) VALUES ('" + filename + "', 'object', '" + this.CurrentUser + "');";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
         }
@@ -708,11 +715,11 @@ namespace ModelViewer
         {
             int fileId = getFileIdByFileName(this.currentModelPath);
 
-            foreach (SubObjectViewModel s in rootSubObjectView.Children)
+            foreach (string s in getSubObjects())
             {
                 try
                 {
-                    string query = "INSERT INTO Objects (file_id, object_name) VALUES (" + fileId + ", '" + s.Name + "');";
+                    string query = "INSERT INTO Objects (file_id, object_name) VALUES (" + fileId + ", '" + s + "');";
                     MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                     cmd.ExecuteNonQuery();
                 }
@@ -728,15 +735,15 @@ namespace ModelViewer
 
         #endregion
 
-        public async void LoadModel(string filename)
+        public void LoadModel(string filename)
         {
             this.CurrentModelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(filename), filename);
-            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
+            this.CurrentModel = this.Load(this.CurrentModelPath, false);
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
 
             //populate sub object display
-            displaySubObjects();
+            refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
         }
 
         private async Task<Model3DGroup> LoadAsync(string model3DPath, bool freeze)
@@ -758,55 +765,213 @@ namespace ModelViewer
 
         private Model3DGroup Load(string model3DPath, bool freeze)
         {
-            var mi = new CAVS_ModelImporter();
-
-            if (freeze)
+            if (File.Exists(model3DPath))
             {
-                // Alt 1. - freeze the model 
-                return mi.Load(model3DPath, null, true);
+                var mi = new CAVS_ModelImporter();
+                try
+                {
+                    if (freeze)
+                    {
+                        // Alt 1. - freeze the model 
+                        return mi.Load(model3DPath, null, true);
+                    }
+
+                    // Alt. 2 - create the model on the UI dispatcher
+                    return mi.Load(model3DPath, this.dispatcher);
+                }
+                catch (InvalidOperationException e)
+                {
+                    MessageBox.Show("Cannot load file. Please check that the file is a valid 3D model file (not .mtl) and try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return null;
+                }
+
+            }
+            else
+            {
+                MessageBox.Show("Cannot find file " + model3DPath + ". The database and file system may be out of sync. Run the Validity Check to check for errors.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
             }
 
-            // Alt. 2 - create the model on the UI dispatcher
-            return mi.Load(model3DPath, this.dispatcher);
 
+        }
+
+        public void deleteObjects(System.Collections.IList files)
+        {
+            //reset viewpoint
+            this.resetView();
+
+            foreach (ObjectFile f in files)
+            {
+                //delete files too
+                try
+                {
+                    Directory.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(f.FileName)), true);
+                }
+                catch (IOException e)
+                {
+                    MessageBox.Show("There was an exception deleting files. The database may be out of sync. Run the validity check to verify data integrity.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                //remove from database
+                string query = "DELETE FROM Files WHERE file_name = '" + f.FileName + "';";
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+
+            //refresh file lists
+            refreshFileLists();
         }
 
         public void deleteObject(string fileName)
         {
+            //reset viewpoint
+            this.resetView();
+
+            //delete files too
+            Directory.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(fileName)), true);
+
+            //remove from database
             string query = "DELETE FROM Files WHERE file_name = '" + fileName + "';";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
 
-            //reset viewpoint
+            //refresh file lists
+            refreshFileLists();
+        }
+
+        public void assignFiles(System.Collections.IList files)
+        {
+            foreach (ObjectFile f in files)
+            {
+                assignFile(f.FileId, this.CurrentUser);
+            }
+            this.refreshFileLists();
+        }
+
+        public void assignFiles(System.Collections.IList files, string username)
+        {
+            foreach (ObjectFile f in files)
+            {
+                assignFile(f.FileId, username);
+            }
+            this.refreshFileLists();
+        }
+
+        public void assignFile(int fileId)
+        {
+            assignFile(fileId, this.CurrentUser);
+            this.refreshFileLists();
+        }
+
+        public void assignFile(int fileId, string username)
+        {
+            if (username != "")
+            {
+                string query = "UPDATE Files SET `current_user` = '" + username + "', review_ready = 0, reviewed_by = NULL WHERE file_id = " + fileId;
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+            else
+            {
+                string query = "UPDATE Files SET `current_user` = NULL, review_ready = 0, reviewed_by = NULL WHERE file_id = " + fileId;
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void markFileComplete(int fileId)
+        {
+            string query = "UPDATE Files SET review_ready = 1, `current_user` = NULL WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+
+            this.refreshFileLists();
+        }
+
+        public void approveReview(int fileId)
+        {
+            string query = "UPDATE Files SET `reviewed_by` = '" + this.CurrentUser + "' WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+
+            this.refreshFileLists();
+        }
+
+        private void setFileFriendlyName(string fileName, string friendlyName)
+        {
+            int fileId = getFileIdByFileName(fileName);
+
+            if (fileId != -1)
+            {
+                string query = "UPDATE Files SET friendly_name = '" + friendlyName + "' WHERE file_id = " + fileId;
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void resetModel(bool resetSubObjects)
+        {
+            if (this.CurrentModelPath != null)
+            {
+                this.CurrentModel = this.Load(this.CurrentModelPath, false);
+
+                if (resetSubObjects)
+                {
+                    refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
+                }
+            }
+        }
+
+        public void resetView()
+        {
             this.CurrentModelPath = "";
             this.CurrentModel = new Model3DGroup();
             this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
             this.viewport.ZoomExtents(0);
 
-            //delete files too
-            Directory.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(fileName)), true);
+            this.refreshSubObjects(-1);
+
+            this.refreshTagTree();
         }
 
-        private void displaySubObjects()
+        #endregion
+
+        #region SubObject Code
+
+        private List<string> getSubObjects()
         {
-            SubObject root = new SubObject("Objects:");
+            List<string> subObjects = new List<string>();
+
             foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
             {
-                SubObject tag = new SubObject(gm.GetName());
-                if (!duplicateSubObject(root.Children, tag.Name))
-                {
-                    root.Children.Add(tag);
-                }
-
+                subObjects.Add(gm.GetName());
             }
 
-            rootSubObjectView = new SubObjectViewModel(root);
+            return subObjects;
+        }
+
+        private void refreshSubObjects(int fileId)
+        {
+            subObjectList = new List<SubObject>();
+
+            if (fileId != -1)
+            {
+                string query = "SELECT * FROM Objects WHERE file_id = " + fileId;
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+
+                //populate the root file object with database entries
+                foreach (DataRow row in table.Rows)
+                {
+                    SubObject so = new SubObject(Convert.ToInt32(row["object_id"]), (string)row["object_name"]);
+                    subObjectList.Add(so);
+                }
+            }
+
 
             this.RaisePropertyChanged("SubObjects");
 
-            rootSubObjectView.ExpandAll();
-
-            addObjectsToDatabase();
         }
 
         private bool duplicateSubObject(IList<SubObject> children, string name)
@@ -825,21 +990,25 @@ namespace ModelViewer
         {
             resetModel(false);
 
-            foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
+            if (CurrentModel != null)
             {
-                if (gm.GetName().Equals(name))
+                foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
                 {
-                    MaterialGroup mg = new MaterialGroup();
-                    mg.Children.Add(gm.Material);
-                    mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
-                    gm.Material = mg;
+                    if (gm.GetName().Equals(name))
+                    {
+                        MaterialGroup mg = new MaterialGroup();
+                        mg.Children.Add(gm.Material);
+                        mg.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
+                        gm.Material = mg;
 
-                    MaterialGroup mgBack = new MaterialGroup();
-                    mgBack.Children.Add(gm.BackMaterial);
-                    mgBack.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
-                    gm.BackMaterial = mgBack;
+                        MaterialGroup mgBack = new MaterialGroup();
+                        mgBack.Children.Add(gm.BackMaterial);
+                        mgBack.Children.Add(new EmissiveMaterial(new SolidColorBrush(Colors.DarkGreen)));
+                        gm.BackMaterial = mgBack;
+                    }
                 }
             }
+
         }
 
         private void renameObject(string oldName, string newName)
@@ -858,31 +1027,6 @@ namespace ModelViewer
             }
         }
 
-        private void setFileFriendlyName(string fileName, string friendlyName)
-        {
-            int fileId = getFileIdByFileName(fileName);
-
-            if (fileId != -1)
-            {
-                string query = "UPDATE Files SET friendly_name = '" + friendlyName + "' WHERE file_id = " + fileId;
-                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public void resetModel(bool resetSubObjects)
-        {
-            this.CurrentModel = this.Load(this.CurrentModelPath, false);
-            if (resetSubObjects)
-            {
-                foreach (var i in rootSubObjectView.Children)
-                {
-                    i.IsSelected = false;
-                }
-            }
-
-        }
-
         #endregion
 
         #region Property Code
@@ -896,14 +1040,29 @@ namespace ModelViewer
             get { return new ReadOnlyCollection<TagViewModel>(new TagViewModel[] { rootTagView }); }
         }
 
-        public ReadOnlyCollection<SubObjectViewModel> SubObjects
+        public ReadOnlyCollection<SubObject> SubObjects
         {
-            get { return new ReadOnlyCollection<SubObjectViewModel>(new SubObjectViewModel[] { rootSubObjectView }); }
+            get { return new ReadOnlyCollection<SubObject>(subObjectList); }
         }
 
-        public ReadOnlyCollection<ObjectFileViewModel> ObjectFiles
+        public ReadOnlyCollection<ObjectFile> UnassignedFiles
         {
-            get { return new ReadOnlyCollection<ObjectFileViewModel>(new ObjectFileViewModel[] { rootObjectFileView }); }
+            get { return new ReadOnlyCollection<ObjectFile>(unassignedFileList); }
+        }
+
+        public ReadOnlyCollection<ObjectFile> MyFiles
+        {
+            get { return new ReadOnlyCollection<ObjectFile>(myFileList); }
+        }
+
+        public ReadOnlyCollection<ObjectFile> ReviewFiles
+        {
+            get { return new ReadOnlyCollection<ObjectFile>(reviewFileList); }
+        }
+
+        public ReadOnlyCollection<ObjectFile> ApprovedFiles
+        {
+            get { return new ReadOnlyCollection<ObjectFile>(approvedFileList); }
         }
 
 
@@ -1000,6 +1159,8 @@ namespace ModelViewer
 
         public ICommand FileExportCommand { get; set; }
 
+        public ICommand FileExportXMLCommand { get; set; }
+
         public ICommand FileSaveScreenshotCommand { get; set; }
 
         public ICommand FileExitCommand { get; set; }
@@ -1013,6 +1174,8 @@ namespace ModelViewer
         public ICommand RenameObjectCommand { get; set; }
 
         public ICommand MarkTagAsReviewedCommand { get; set; }
+
+        public ICommand CheckDataValidityCommand { get; set; }
 
         private static void FileExit()
         {
@@ -1028,6 +1191,187 @@ namespace ModelViewer
             }
 
             this.viewport.Export(path);
+        }
+
+        private async void FileExportXML()
+        {
+            CommonSaveFileDialog sfd = new CommonSaveFileDialog();
+            sfd.Filters.Add(new CommonFileDialogFilter("XML File", ".xml"));
+            if (sfd.ShowDialog().Equals(CommonFileDialogResult.Ok))
+            {
+                string path = sfd.FileName;
+                if (!path.EndsWith(".xml", true, null))
+                {
+                    path += ".xml";
+                }
+                await WriteXML(path);
+            }
+        }
+
+        private async Task WriteXML(string path)
+        {
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+            settings.Async = true;
+
+            using (XmlWriter writer = XmlWriter.Create(path, settings))
+            {
+                await writer.WriteStartDocumentAsync();
+
+                //start definitions
+                await writer.WriteStartElementAsync(null, "definitions", null);
+
+                //start objects
+                await writer.WriteStartElementAsync(null, "objects", null);
+
+                ////start default preview
+                await writer.WriteStartElementAsync(null, "defaultPreview", null);
+                await writer.WriteAttributeStringAsync(null, "path", null, "Icons/DefaultPreview.png");
+                await writer.WriteEndElementAsync();
+                ////end default preview
+
+                //for each file in the database
+                string query = "SELECT * FROM Files";
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+
+                //for each file in the database
+                foreach (DataRow row in table.Rows)
+                {
+                    ////start object elements
+                    await writer.WriteStartElementAsync(null, "object", null);
+                    await writer.WriteAttributeStringAsync(null, "name", null, ConvertFromDBValue<string>(row["friendly_name"]));
+                    await writer.WriteAttributeStringAsync(null, "category", null, "Obstacles");
+                    await writer.WriteAttributeStringAsync(null, "preview", null, ConvertFromDBValue<string>(row["screenshot"]));
+
+                    //////start representations
+                    await writer.WriteStartElementAsync(null, "representations", null);
+                    ////////start ogre3d
+                    await writer.WriteStartElementAsync(null, "ogre3d", null);
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
+                    await writer.WriteAttributeStringAsync(null, "shadows", null, "off");
+                    await writer.WriteAttributeStringAsync(null, "zUp", null, "false");
+                    await writer.WriteEndElementAsync();
+                    /////////end ogre3d
+
+                    ////////start vane
+                    await writer.WriteStartElementAsync(null, "vane", null);
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, ConvertFromDBValue<string>(row["file_name"]));
+                    await writer.WriteEndElementAsync();
+                    ////////end vane
+
+                    await writer.WriteEndElementAsync();
+                    //////end representations
+
+                    ///////////////////////////////
+                    /////START PARTS          /////
+                    ///////////////////////////////
+
+                    string partQuery = "SELECT * FROM Objects WHERE file_id = " + ConvertFromDBValue<int>(row["file_id"]);
+                    MySqlDataAdapter partAdapter = new MySqlDataAdapter(partQuery, sqlConnection);
+                    DataTable partTable = new DataTable();
+                    partAdapter.Fill(partTable);
+
+                    //for each part in the file
+                    foreach (DataRow partRow in partTable.Rows)
+                    {
+                        //////start part
+                        await writer.WriteStartElementAsync(null, "part", null);
+                        await writer.WriteAttributeStringAsync(null, "name", null, ConvertFromDBValue<string>(partRow["object_name"]));
+
+                        ////////////////
+                        // START TAGS //
+                        ////////////////
+
+                        string tagQuery = "SELECT tag_name FROM Object_Tag, Tags WHERE Object_Tag.object_id = " + ConvertFromDBValue<int>(partRow["object_id"]) + " AND Object_Tag.tag_id = Tags.tag_id";
+                        MySqlDataAdapter tagAdapter = new MySqlDataAdapter(tagQuery, sqlConnection);
+                        DataTable tagTable = new DataTable();
+                        tagAdapter.Fill(tagTable);
+
+                        foreach (DataRow tagRow in tagTable.Rows)
+                        {
+                            ////////start tag
+                            await writer.WriteStartElementAsync(null, "tag", null);
+                            await writer.WriteAttributeStringAsync(null, "name", null, ConvertFromDBValue<string>(tagRow["tag_name"]));
+                            await writer.WriteEndElementAsync();
+                            ////////end tag
+                        }
+
+                        ////////////////
+                        //  END TAGS  //
+                        ////////////////
+
+                        await writer.WriteEndElementAsync();
+                        //////end part
+                    }
+
+                    ///////////////////////////////
+                    /////END PARTS            /////
+                    ///////////////////////////////
+
+                    //////start physics
+                    await writer.WriteStartElementAsync(null, "physics", null);
+                    await writer.WriteAttributeStringAsync(null, "type", null, "static");
+
+                    ////////start geometry
+                    await writer.WriteStartElementAsync(null, "geometry", null);
+                    //////////start shape
+                    await writer.WriteStartElementAsync(null, "shape", null);
+                    await writer.WriteAttributeStringAsync(null, "type", null, "triMesh");
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
+                    await writer.WriteAttributeStringAsync(null, "upAxis", null, "y");
+                    await writer.WriteEndElementAsync();
+                    //////////end shape
+                    await writer.WriteEndElementAsync();
+                    ////////end geometry
+
+                    await writer.WriteEndElementAsync();
+                    //////end physics
+
+                    await writer.WriteEndElementAsync();
+                    ////end object
+
+                }//end for each file in database
+
+                await writer.WriteEndElementAsync();
+                //end objects
+
+                //start tag hierarchy
+                await writer.WriteStartElementAsync(null, "tags", null);
+
+                foreach (TagViewModel tag in rootTagView.Children)
+                {
+                    await writer.WriteStartElementAsync(null, "tag", null);
+                    await writer.WriteAttributeStringAsync(null, "name", null, tag.Name);
+                    await writer.WriteEndElementAsync();
+                    await WriteTagXml(writer, tag);
+                }
+
+                await writer.WriteEndElementAsync();
+                //end tag hierarchy
+
+                await writer.WriteEndElementAsync();
+                //end definitions
+
+                //flush buffer
+                await writer.FlushAsync();
+
+            }
+
+
+        }
+
+        private async Task WriteTagXml(XmlWriter writer, TagViewModel tag)
+        {
+            foreach (TagViewModel tvm in tag.Children)
+            {
+                await writer.WriteStartElementAsync(null, "tag", null);
+                await writer.WriteAttributeStringAsync(null, "name", null, tvm.Name);
+                await writer.WriteAttributeStringAsync(null, "parent", null, tvm.Parent.Name);
+                await writer.WriteEndElementAsync();
+                await WriteTagXml(writer, tvm);
+            }
         }
 
         private void Settings()
@@ -1047,6 +1391,8 @@ namespace ModelViewer
         {
             this.viewport.ZoomExtents(500);
         }
+
+
 
         private async void FileOpen()
         {
@@ -1078,12 +1424,16 @@ namespace ModelViewer
 
             png.Frames.Add(BitmapFrame.Create(bmp));
 
-            using (Stream stm = File.Create(Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png")))
+            using (Stream stm = File.Create(Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(this.CurrentModelPath), Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png")))
             {
-
                 png.Save(stm);
-
             }
+
+            string query = "UPDATE Files SET screenshot = '" + Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".png" + "' WHERE file_id = " + getFileIdByFileName(this.CurrentModelPath);
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+
+            refreshFileLists();
         }
 
         private void HelpAbout()
@@ -1103,17 +1453,6 @@ namespace ModelViewer
         }
 
         #endregion
-
-        public void selectSubObjectTreeItemByName(string name)
-        {
-            foreach (var i in rootSubObjectView.Children)
-            {
-                if (i.Name.Equals(name))
-                {
-                    i.IsSelected = true;
-                }
-            }
-        }
 
         private int getObjectId(int file_id, string object_name)
         {
@@ -1149,6 +1488,123 @@ namespace ModelViewer
             return -1;
         }
 
+        public List<string> getListOfUsers()
+        {
+            List<string> users = new List<string>();
 
+            string query = "SELECT DISTINCT uploaded_by " +
+                "FROM Files " +
+                "WHERE uploaded_by IS NOT NULL " +
+                "UNION " +
+                "SELECT DISTINCT `current_user` " +
+                "FROM Files " +
+                "WHERE `current_user` IS NOT NULL " +
+                "UNION " +
+                "SELECT DISTINCT reviewed_by " +
+                "FROM Files " +
+                "WHERE reviewed_by IS NOT NULL " +
+                "UNION " +
+                "SELECT DISTINCT tagged_by " +
+                "FROM Object_Tag " +
+                "WHERE tagged_by IS NOT NULL ";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                users.Add((string)reader["uploaded_by"]);
+            }
+
+            reader.Close();
+
+            return users;
+        }
+
+        public void checkValidityOfDatabase()
+        {
+            List<string> rawResourceDirs = new List<string>(Directory.GetDirectories(this.ModelDirectory));
+
+            List<string> resourceDirs = new List<string>();
+            foreach (string s in rawResourceDirs)
+            {
+                resourceDirs.Add(new DirectoryInfo(s).Name);
+            }
+
+            string query = "SELECT file_name from Files;";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            List<string> unmatchedDbEntries = new List<string>();
+
+            while (reader.Read())
+            {
+                if (resourceDirs.Contains(Path.GetFileNameWithoutExtension((string)reader["file_name"])))
+                {
+                    resourceDirs.Remove(Path.GetFileNameWithoutExtension((string)reader["file_name"]));
+                }
+                else
+                {
+                    unmatchedDbEntries.Add((string)reader["file_name"]);
+                }
+            }
+
+            reader.Close();
+
+            /*Console.WriteLine("The following items have folders in the model directory, but no matching database entry:");
+            foreach (string s in resourceDirs)
+            {
+                Console.WriteLine(s);
+            }
+
+            Console.WriteLine("The following items have database entries, but no matching folder in the model directory:");
+            foreach (string s in unmatchedDbEntries)
+            {
+                Console.WriteLine(s);
+            }*/
+
+            CheckValidityDialog cvd = new CheckValidityDialog(this, resourceDirs, unmatchedDbEntries);
+            cvd.ShowDialog();
+
+
+        }
+
+        public void purgeDirectories(List<string> directoryList)
+        {
+            foreach (string s in directoryList)
+            {
+                Directory.Delete(Path.Combine(this.ModelDirectory, s), true);
+            }
+        }
+
+        public void purgeDatabaseEntries(List<string> databaseEntryList)
+        {
+            foreach (string s in databaseEntryList)
+            {
+                string query = "DELETE FROM Files WHERE file_id = " + getFileIdByFileName(s);
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public T ConvertFromDBValue<T>(object obj)
+        {
+            if (obj == null || obj == DBNull.Value)
+            {
+                return default(T);
+            }
+            else
+            {
+                return (T)obj;
+            }
+        }
+
+        public bool IsTagTreeEnabled
+        {
+            get { return rootTagView.IsEnabled; }
+            set
+            {
+                rootTagView.IsEnabled = value;
+            }
+        }
     }
 }

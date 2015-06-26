@@ -116,11 +116,25 @@
     <Compile Include="Dialogs\AboutBox.Designer.cs">
       <DependentUpon>AboutBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\AssignOtherDialog.xaml.cs">
+      <DependentUpon>AssignOtherDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\CheckValidityDialog.xaml.cs">
+      <DependentUpon>CheckValidityDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Importer\CAVS_ModelImporter.cs" />
     <Compile Include="Importer\CAVS_ObjReader.cs" />
     <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
       <DependentUpon>MissingFileDialog.xaml</DependentUpon>
     </Compile>
+    <Page Include="Dialogs\AssignOtherDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\CheckValidityDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Dialogs\NewTagDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -216,8 +230,39 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Add-New-128.png" />
-    <Resource Include="Images\Command-Refresh-128.png" />
     <Resource Include="Images\Delete-128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Command-Refresh-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Garbage-Closed-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Navigation-Down-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Navigation-Right-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Check-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\User-Group-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\User-Profile-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\No-Screenshot-32.png" />
+    <Resource Include="Images\No-Tag-32.png" />
+    <Resource Include="Images\Screenshot-32.png" />
+    <Resource Include="Images\Tag-Approved-32.png" />
+    <Resource Include="Images\Tag-To-Review-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Sort-Ascending-32.png" />
+    <Resource Include="Images\Sort-Descending-32.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

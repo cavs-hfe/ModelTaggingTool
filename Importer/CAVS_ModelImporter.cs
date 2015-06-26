@@ -40,7 +40,7 @@ namespace ModelViewer.Importer
         /// <exception cref="System.InvalidOperationException">File format not supported.</exception>
         public Model3DGroup Load(string path, Dispatcher dispatcher = null, bool freeze = false)
         {
-            if (path == null)
+            if (path == null || path.Equals(""))
             {
                 return null;
             }

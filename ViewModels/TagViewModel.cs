@@ -15,6 +15,7 @@ namespace ModelViewer
         bool isExpanded;
         bool isSelected;
         bool isChecked;
+        bool isEnabled = true;
 
         bool isReviewed = true;
 
@@ -120,6 +121,15 @@ namespace ModelViewer
                 {
                     parent.IsChecked = true;
                 }
+
+                //uncheck all the way down to leaf
+                if (!isChecked && children != null)
+                {
+                    foreach (TagViewModel child in children)
+                    {
+                        child.IsChecked = false;
+                    }
+                }
             }
         }
 
@@ -134,6 +144,28 @@ namespace ModelViewer
                 foreach (TagViewModel t in this.Children)
                 {
                     t.Check(tagName);
+                }
+            }
+        }
+
+        public bool IsEnabled
+        {
+            get { return isEnabled; }
+            set
+            {
+                if (value != isEnabled)
+                {
+                    isEnabled = value;
+                    this.OnPropertyChanged("IsEnabled");
+
+                    //enable or disable all the way down to leaf
+                    if (children != null)
+                    {
+                        foreach (TagViewModel child in children)
+                        {
+                            child.IsEnabled = isEnabled;
+                        }
+                    }
                 }
             }
         }

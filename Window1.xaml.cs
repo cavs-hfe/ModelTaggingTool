@@ -17,6 +17,10 @@ using HelixToolkit.Wpf;
 using System.Windows.Media;
 using System;
 using System.Windows.Controls;
+using ModelViewer.Dialogs;
+using System.Collections.Generic;
+using System.Windows.Documents;
+using System.ComponentModel;
 
 namespace ModelViewer
 {
@@ -28,9 +32,11 @@ namespace ModelViewer
         Point startPoint;
         bool isDragging = false;
 
-        private double minMouseMoveDragDistance = 16.0;
-
         MainViewModel mainViewModel;
+
+        private GridViewColumnHeader listViewSortCol = null;
+        private SortAdorner listViewSortAdorner = null;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Window1"/> class.
@@ -38,27 +44,30 @@ namespace ModelViewer
         public Window1()
         {
             this.InitializeComponent();
-            mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree, fileTree, objectsTree);
+            mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree);
             this.DataContext = mainViewModel;
         }
 
         #region Object Loading and Selection
 
-        private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //make sure double click on same item
-            if (sender is TreeViewItem)
-            {
-                TreeViewItem item = sender as TreeViewItem;
-                ObjectFileViewModel ofvm = item.Header as ObjectFileViewModel;
-                string filename = ofvm.FileName;
+            ListView lv = e.OriginalSource as ListView;
 
-                if (!filename.Equals(""))
-                {
-                    mainViewModel.LoadModel(filename);
-                }
+            if (lv.SelectedItems.Count > 1)
+            {
 
             }
+            else
+            {
+                ObjectFile of = lv.SelectedItem as ObjectFile;
+
+                if (of != null)
+                {
+                    mainViewModel.LoadModel(of.FileName);
+                }
+            }
+            e.Handled = true;
 
         }
 
@@ -74,29 +83,38 @@ namespace ModelViewer
 
                 var model = firstHit.Model as GeometryModel3D;
 
-                mainViewModel.selectSubObjectTreeItemByName(model.GetName());
+                foreach (SubObject v in objectsList.Items)
+                {
+                    if (v.Name.Equals(model.GetName()))
+                    {
+                        objectsList.SelectedItem = v;
+                        break;
+                    }
+                }
 
                 e.Handled = true;
             }
             else
             {
                 mainViewModel.resetModel(true);
+                mainViewModel.refreshTagTree();
                 System.Console.WriteLine("Didn't click object");
             }
         }
 
-        private void OnSubObjectItemSelected(object sender, RoutedEventArgs args)
+        private void objectsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //highlight subobject
-            TreeViewItem source = args.OriginalSource as TreeViewItem;
-            SubObjectViewModel subObjectView = source.Header as SubObjectViewModel;
-            string subName = subObjectView.Name;
+            ListView lv = e.OriginalSource as ListView;
+            SubObject so = lv.SelectedItem as SubObject;
 
-            mainViewModel.highlightObjectByName(subName);
+            if (so != null)
+            {
+                mainViewModel.highlightObjectByName(so.Name);
+                mainViewModel.showAssignedTags(so.Id);
+            }
 
-            mainViewModel.showAssignedTags(subName);
 
-            args.Handled = true;
+            e.Handled = true;
         }
 
         #endregion
@@ -197,7 +215,11 @@ namespace ModelViewer
         {
             mainViewModel.refreshTagTree();
 
-            mainViewModel.showAssignedTags();
+            SubObject so = objectsList.SelectedItem as SubObject;
+            if (so != null)
+            {
+                mainViewModel.showAssignedTags(so.Id);
+            }
         }
 
         private void DeleteTag_Click(object sender, RoutedEventArgs e)
@@ -230,23 +252,95 @@ namespace ModelViewer
 
         private void RefreshModels_Click(object sender, RoutedEventArgs e)
         {
-            mainViewModel.refreshFileTree();
+            mainViewModel.refreshFileLists();
         }
 
         private void DeleteModel_Click(object sender, RoutedEventArgs e)
         {
-            if (fileTree.SelectedItem != null)
+            TabItem tc = filesTabControl.SelectedItem as TabItem;
+            ListView lv = tc.Content as ListView;
+
+            if (lv.SelectedItems.Count > 0)
             {
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this model?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this model(s)?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
-                    ObjectFileViewModel ofvm = fileTree.SelectedItem as ObjectFileViewModel;
-                    mainViewModel.deleteObject(ofvm.FileName);
-
-                    mainViewModel.refreshFileTree();
+                    mainViewModel.deleteObjects(lv.SelectedItems);
                 }
             }
+            else
+            {
+                MessageBox.Show("You must select a file before you can assign it to yourself. Click a filename to select it and try again.", "No File Selected", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+            }
+        }
 
+        private void AssignMeButton_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem tc = filesTabControl.SelectedItem as TabItem;
+            ListView lv = tc.Content as ListView;
+            
+            if (lv.SelectedItems.Count > 0)
+            {
+                mainViewModel.assignFiles(lv.SelectedItems);
+            }
+            else
+            {
+                MessageBox.Show("You must select a file before you can assign it to yourself. Click a filename to select it and try again.", "No File Selected", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+            }
+
+        }
+
+        private void AssignOtherButton_Click(object sender, RoutedEventArgs e)
+        {
+            List<string> users = mainViewModel.getListOfUsers();
+            AssignOtherDialog aod = new AssignOtherDialog(users);
+            if (aod.ShowDialog() == true)
+            {
+                TabItem tc = filesTabControl.SelectedItem as TabItem;
+                ListView lv = tc.Content as ListView;
+
+                if (lv.SelectedItems.Count > 0)
+                {
+                    mainViewModel.assignFiles(lv.SelectedItems, aod.UserName);
+                }
+                else
+                {
+                    MessageBox.Show("You must select a file before you can assign it. Click a filename to select it and try again.", "No File Selected", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                }
+
+            }
+        }
+
+        private void ApproveButton_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem tc = filesTabControl.SelectedItem as TabItem;
+            ListView lv = tc.Content as ListView;
+            ObjectFile of = lv.SelectedItem as ObjectFile;
+
+            if (of != null)
+            {
+                mainViewModel.approveReview(of.FileId);
+            }
+            else
+            {
+                MessageBox.Show("You must select a file before you can approve it. Click a filename to select it and try again.", "No File Selected", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+            }
+        }
+
+        private void MarkReadyButton_Click(object sender, RoutedEventArgs e)
+        {
+            TabItem tc = filesTabControl.SelectedItem as TabItem;
+            ListView lv = tc.Content as ListView;
+            ObjectFile of = lv.SelectedItem as ObjectFile;
+
+            if (of != null)
+            {
+                mainViewModel.markFileComplete(of.FileId);
+            }
+            else
+            {
+                MessageBox.Show("You must select a file before you can mark it complete. Click a filename to select it and try again.", "No File Selected", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+            }
         }
 
         #endregion
@@ -254,13 +348,25 @@ namespace ModelViewer
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
             TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
-            mainViewModel.assignTagToObject(source.Id);
+            source.IsChecked = true;
+            SubObject so = objectsList.SelectedItem as SubObject;
+            if (so != null && source != null)
+            {
+                mainViewModel.assignTagToObject(so.Id, source.Id);
+            }
+
         }
 
         private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
-            mainViewModel.unassignTagFromObject(source.Id);
+            source.IsChecked = false;
+            SubObject so = objectsList.SelectedItem as SubObject;
+            if (so != null && source != null)
+            {
+                mainViewModel.unassignTagFromObject(so.Id, source.Id);
+            }
+
         }
 
         private void mnuMarkReviewed_Click(object sender, RoutedEventArgs e)
@@ -268,10 +374,121 @@ namespace ModelViewer
             ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
             TreeViewItem item = cm.PlacementTarget as TreeViewItem;
             TagViewModel tvm = item.Header as TagViewModel;
+            SubObject so = objectsList.SelectedItem as SubObject;
+            if (so != null && tvm != null)
+            {
+                mainViewModel.MarkTagAsReviewed(tvm.Id, so.Id);
+            }
 
-            mainViewModel.MarkTagAsReviewed(tvm.Id);
         }
 
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            mainViewModel.resetView();
+
+            if (UnassignedTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = true;
+            }
+            else if (MyFilesTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = true;
+                AssignMeButton.IsEnabled = false;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = true;
+            }
+            else if (ReviewTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = true;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = true;
+            }
+            else if (ApprovedTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
+            }
+        }
+
+        private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
+        {
+            /*GridViewColumnHeader column = (sender as GridViewColumnHeader);
+            string sortBy = column.Tag.ToString();
+
+            ListView toSort = null;
+            //if (sortBy.StartsWith("Un"))
+            //{
+                toSort = unassignedListView;
+            //}
+
+            if (toSort != null)
+            {
+                if (listViewSortCol != null)
+                {
+                    AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+                    toSort.Items.SortDescriptions.Clear();
+                }
+
+                ListSortDirection newDir = ListSortDirection.Ascending;
+                if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+                    newDir = ListSortDirection.Descending;
+
+                listViewSortCol = column;
+                listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
+                AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+                toSort.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
+            }*/
+
+        }
+    }
+
+    public class SortAdorner : Adorner
+    {
+        private static Geometry ascGeometry =
+                Geometry.Parse("M 0 4 L 3.5 0 L 7 4 Z");
+
+        private static Geometry descGeometry =
+                Geometry.Parse("M 0 0 L 3.5 4 L 7 0 Z");
+
+        public ListSortDirection Direction { get; private set; }
+
+        public SortAdorner(UIElement element, ListSortDirection dir)
+            : base(element)
+        {
+            this.Direction = dir;
+        }
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+
+            if (AdornedElement.RenderSize.Width < 20)
+                return;
+
+            TranslateTransform transform = new TranslateTransform
+                    (
+                            AdornedElement.RenderSize.Width - 15,
+                            (AdornedElement.RenderSize.Height - 5) / 2
+                    );
+            drawingContext.PushTransform(transform);
+
+            Geometry geometry = ascGeometry;
+            if (this.Direction == ListSortDirection.Descending)
+                geometry = descGeometry;
+            drawingContext.DrawGeometry(Brushes.Black, null, geometry);
+
+            drawingContext.Pop();
+        }
     }
 
 
