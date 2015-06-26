@@ -392,7 +392,7 @@ namespace ModelViewer
                 MarkReadyButton.IsEnabled = false;
                 AssignMeButton.IsEnabled = true;
                 AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
             }
             else if (MyFilesTab.IsSelected)
             {
@@ -408,7 +408,7 @@ namespace ModelViewer
                 MarkReadyButton.IsEnabled = false;
                 AssignMeButton.IsEnabled = true;
                 AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
             }
             else if (ApprovedTab.IsSelected)
             {
@@ -449,6 +449,11 @@ namespace ModelViewer
                 toSort.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
             }*/
 
+        }
+
+        private void TakeScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            mainViewModel.FileSaveScreenshot();
         }
     }
 

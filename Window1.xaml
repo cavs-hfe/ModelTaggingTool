@@ -132,7 +132,10 @@
                         <Image Source="/Images/User-Group-32.png" Width="25" Height="25" />
                     </Button>
                     <Separator />
-                    <Button x:Name="MarkReadyButton" Click="MarkReadyButton_Click" ToolTip="Ready for Approval">
+                    <Button x:Name="TakeScreenshotButton" Click="TakeScreenshotButton_Click"  ToolTip="Take Screenshot">
+                        <Image Source="/Images/Images-32.png" Width="25" Height="25" />
+                    </Button>
+                    <Button x:Name="MarkReadyButton" Click="MarkReadyButton_Click" ToolTip="Ready for Review">
                         <Image Source="/Images/Navigation-Right-32.png" Width="25" Height="25" />
                     </Button>
                     <Separator />

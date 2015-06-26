@@ -1402,7 +1402,7 @@ namespace ModelViewer
             this.viewport.ZoomExtents(0);
         }
 
-        private void FileSaveScreenshot()
+        public void FileSaveScreenshot()
         {
             RenderTargetBitmap bmp = new RenderTargetBitmap((int)this.viewport.Viewport.ActualWidth, (int)this.viewport.Viewport.ActualHeight, 96, 96, PixelFormats.Pbgra32);
 
