@@ -389,6 +389,7 @@ namespace ModelViewer
             if (UnassignedTab.IsSelected)
             {
                 ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = false;
                 MarkReadyButton.IsEnabled = false;
                 AssignMeButton.IsEnabled = true;
                 AssignOtherButton.IsEnabled = true;
@@ -397,6 +398,7 @@ namespace ModelViewer
             else if (MyFilesTab.IsSelected)
             {
                 ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = true;
                 MarkReadyButton.IsEnabled = true;
                 AssignMeButton.IsEnabled = false;
                 AssignOtherButton.IsEnabled = true;
@@ -405,6 +407,7 @@ namespace ModelViewer
             else if (ReviewTab.IsSelected)
             {
                 ApproveButton.IsEnabled = true;
+                TakeScreenshotButton.IsEnabled = false;
                 MarkReadyButton.IsEnabled = false;
                 AssignMeButton.IsEnabled = true;
                 AssignOtherButton.IsEnabled = true;
@@ -413,6 +416,7 @@ namespace ModelViewer
             else if (ApprovedTab.IsSelected)
             {
                 ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = false;
                 MarkReadyButton.IsEnabled = false;
                 AssignMeButton.IsEnabled = true;
                 AssignOtherButton.IsEnabled = true;

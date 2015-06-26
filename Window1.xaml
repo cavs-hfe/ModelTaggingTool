@@ -88,7 +88,7 @@
                 <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
                 <MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>
                 <MenuItem Header="Export XML" Command="{Binding FileExportXMLCommand}" />
-                <MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />
+                <!--<MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />-->
                 <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
             </MenuItem>
