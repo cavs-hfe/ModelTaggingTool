@@ -69,6 +69,7 @@
                 </Image.Style>
             </Image>
         </DataTemplate>
+        
     </Window.Resources>
     <Grid>
 
@@ -153,7 +154,7 @@
             </ToolBarTray>
 
             <TextBlock Grid.Row="1">Files:</TextBlock>
-            
+
             <TabControl x:Name="filesTabControl" Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
                 <TabItem x:Name="UnassignedTab" Header="Unassigned">
                     <ListView x:Name="unassignedListView" ItemsSource="{Binding UnassignedFiles}" SelectionChanged="ListView_SelectionChanged">
@@ -161,7 +162,7 @@
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Tag="SS" Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader> 
+                                        <GridViewColumnHeader Tag="SS" Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
@@ -179,15 +180,15 @@
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="MyFilesTab" Header="My Files">
-                    <ListView ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="myFilesListView" ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ReviewTab" Header="Review">
-                    <ListView ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="reviewListView" ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ApprovedTab" Header="Approved">
-                    <ListView ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="approvedListView" ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
                     </ListView>
                 </TabItem>
             </TabControl>
@@ -208,11 +209,11 @@
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
                     </TreeView>-->
-            
+
             <GridSplitter Grid.Row="2" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
 
             <TextBlock Grid.Row="3">Objects:</TextBlock>
-            
+
             <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged" SelectionMode="Single">
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -236,7 +237,7 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            
+
             <!--<TreeView Grid.Row="2" x:Name="objectsTree" ItemsSource="{Binding SubObjects}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
@@ -259,9 +260,14 @@
 
         <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 
-        <DockPanel Grid.Row="1" Grid.Column="2" >
-            
-            <ToolBarTray DockPanel.Dock="Top">
+        <Grid Grid.Row="1" Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+
+            <ToolBarTray Grid.Row="0">
                 <ToolBar>
                     <Button x:Name="NewTagButton" Click="NewTagButton_Click" ToolTip="Add New Tag">
                         <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
@@ -275,7 +281,7 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}">
+            <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}" Grid.Row="1">
                 <!--<TreeView.Resources>
                     <ContextMenu x:Key="ContextMnu">
                         <MenuItem x:Name="mnuMarkReviewed" Header="Mark As Reviewed" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuMarkReviewed_Click"/>
@@ -311,7 +317,84 @@
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-        </DockPanel>
+            
+            <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="2" SelectionChanged="propertiesTabControl_SelectionChanged" IsEnabled="False">
+                <TabItem x:Name="propertiesTab" Header="File Properties">
+                    <Grid ScrollViewer.CanContentScroll="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="1*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="0">Properties:</TextBlock>
+                        
+                        <!-- File Name -->
+                        <TextBlock Grid.Row="1" Grid.Column="0">File Name:</TextBlock>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Path=ActiveFile.FileName}" IsEnabled="False"/>
+
+                        <!-- Friendly Name -->
+                        <TextBlock Grid.Row="2" Grid.Column="0">Friendly Name:</TextBlock>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ActiveFile.FriendlyName}" LostKeyboardFocus="TextBox_LostKeyboardFocus"/>
+
+                        <!-- Category -->
+                        <TextBlock Grid.Row="3" Grid.Column="0">Category:</TextBlock>
+                        <ComboBox Grid.Row="3" Grid.Column="1" IsEditable="True" x:Name="CategoryComboBox" SelectedItem="{Binding Path=ActiveFile.Category}" SelectionChanged="CategoryComboBox_SelectionChanged" TextBoxBase.LostKeyboardFocus="CategoryComboBox_LostKeyboardFocus">
+
+                        </ComboBox>
+
+                        <Separator Grid.Row="4" Grid.ColumnSpan="2" />
+
+                        <!-- OGRE3D Properties -->
+                        <TextBlock Grid.Row="5" Grid.Column="0">OGRE3D Settings:</TextBlock>
+                        <!-- Shadows -->
+                        <TextBlock Grid.Row="6" Grid.Column="0">Shadows:</TextBlock>
+                        <ComboBox Grid.Row="6" Grid.Column="1" SelectedIndex="{Binding Path=ActiveFile.Shadows}" x:Name="ShadowsComboBox" SelectionChanged="ShadowsComboBox_SelectionChanged">
+                            <ComboBoxItem IsSelected="True">Off</ComboBoxItem>
+                            <ComboBoxItem>On</ComboBoxItem>                            
+                        </ComboBox>
+                        
+                        <!-- Z Up -->
+                        <TextBlock Grid.Row="7" Grid.Column="0">Z-Up:</TextBlock>
+                        <ComboBox Grid.Row="7" Grid.Column="1" SelectedIndex="{Binding Path=ActiveFile.ZUp}" x:Name="ZUpComboBox" SelectionChanged="ZUpComboBox_SelectionChanged">
+                            <ComboBoxItem>False</ComboBoxItem>
+                            <ComboBoxItem IsSelected="True">True</ComboBoxItem>   
+                        </ComboBox>
+
+                        <Separator Grid.Row="8" Grid.ColumnSpan="2" />
+
+                        <!-- Physics Properties -->
+                        <TextBlock Grid.Row="9" Grid.Column="0">Physics Settings:</TextBlock>
+                        <!-- Geometry -->
+                        <TextBlock Grid.Row="10" Grid.Column="0">Geometry:</TextBlock>
+                        <ComboBox Grid.Row="10" Grid.Column="1" SelectedIndex="{Binding Path=ActiveFile.PhysicsGeometry}" x:Name="PhysicsComboBox" SelectionChanged="PhysicsComboBox_SelectionChanged">
+                            <ComboBoxItem IsSelected="True">Mesh</ComboBoxItem>
+                            <ComboBoxItem>Bounding Box</ComboBoxItem>
+                        </ComboBox>
+
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="screenshotTab" Header="Screenshot">
+                    <Image x:Name="ScreenshotDisplay" Source="{Binding Path=ActiveFile.ScreenshotImageSource}" Stretch="Fill"/>
+                </TabItem>
+                <TabItem x:Name="FileCommentsTab" Header="Comments">
+                    <TextBox x:Name="FileComments" Text="{Binding Path=ActiveFile.Comments}" LostKeyboardFocus="FileComments_LostKeyboardFocus" TextWrapping="Wrap" AcceptsReturn="True"/>
+                </TabItem>
+            </TabControl>
+            
+        </Grid>
 
         <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
 

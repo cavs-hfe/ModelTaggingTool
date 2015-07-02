@@ -60,15 +60,17 @@ namespace ModelViewer
 
         private TagViewModel rootTagView;
 
-        private List<ObjectFile> unassignedFileList;
+        private List<ObjectFile> unassignedFileList = new List<ObjectFile>();
 
-        private List<ObjectFile> myFileList;
+        private List<ObjectFile> myFileList = new List<ObjectFile>();
 
-        private List<ObjectFile> reviewFileList;
+        private List<ObjectFile> reviewFileList = new List<ObjectFile>();
 
-        private List<ObjectFile> approvedFileList;
+        private List<ObjectFile> approvedFileList = new List<ObjectFile>();
 
         private List<SubObject> subObjectList = new List<SubObject>();
+
+        private ObjectFile activeFile;
 
         public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree)
         {
@@ -359,11 +361,11 @@ namespace ModelViewer
 
                 if (dt.Rows.Count > 0)
                 {
-                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                 }
                 else
                 {
-                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                    unassignedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                 }
 
             }
@@ -393,11 +395,11 @@ namespace ModelViewer
 
                     if (dt.Rows.Count > 0)
                     {
-                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
                     else
                     {
-                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        myFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
                 }
 
@@ -436,11 +438,11 @@ namespace ModelViewer
 
                     if (dt.Rows.Count > 0)
                     {
-                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
                     else
                     {
-                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        reviewFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
 
                 }
@@ -475,11 +477,11 @@ namespace ModelViewer
 
                     if (dt.Rows.Count > 0)
                     {
-                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
                     else
                     {
-                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"])));
+                        approvedFileList.Add(new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["comment"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"])));
                     }
                 }
             }
@@ -735,6 +737,20 @@ namespace ModelViewer
 
         #endregion
 
+        #region Load Model
+
+        public void LoadModel(ObjectFile of)
+        {
+            this.CurrentModelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(of.FileName), of.FileName);
+            this.CurrentModel = this.Load(this.CurrentModelPath, false);
+            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
+            this.viewport.ZoomExtents(0);
+            this.ActiveFile = of;
+
+            //populate sub object display
+            refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
+        }
+
         public void LoadModel(string filename)
         {
             this.CurrentModelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(filename), filename);
@@ -794,6 +810,8 @@ namespace ModelViewer
 
 
         }
+
+        #endregion
 
         public void deleteObjects(System.Collections.IList files)
         {
@@ -897,7 +915,7 @@ namespace ModelViewer
             this.refreshFileLists();
         }
 
-        private void setFileFriendlyName(string fileName, string friendlyName)
+        public void setFileFriendlyName(string fileName, string friendlyName)
         {
             int fileId = getFileIdByFileName(fileName);
 
@@ -1027,6 +1045,63 @@ namespace ModelViewer
             }
         }
 
+        public List<string> getCategories()
+        {
+            List<string> categories = new List<string>();
+
+            string query = "SELECT DISTINCT `category` FROM Files WHERE `category` <> \"\";";
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            //populate the root file object with database entries
+            foreach (DataRow row in table.Rows)
+            {
+                categories.Add(ConvertFromDBValue<string>(row["category"]));
+            }
+
+            return categories;
+        }
+
+        public void setCategory(int fileId, string category)
+        {
+            string query = "UPDATE Files SET `category` = '" + category + "' WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void setShadows(int fileId, int value)
+        {
+            string query = "UPDATE Files SET `shadows` = " + value + " WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void setZUp(int fileId, int value)
+        {
+            string query = "UPDATE Files SET `zUp` = " + value + " WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void setPhysicsGeometry(int fileId, int value)
+        {
+            string query = "UPDATE Files SET `physicsGeometry` = " + value + " WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void setComments(int fileId, string value)
+        {
+            string query = "UPDATE Files SET `comment` = @value WHERE file_id = " + fileId;
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection = sqlConnection;
+            cmd.CommandText = query;
+            cmd.Prepare();
+            cmd.Parameters.AddWithValue("value", value);
+            cmd.ExecuteNonQuery();
+        }
+
         #endregion
 
         #region Property Code
@@ -1148,6 +1223,16 @@ namespace ModelViewer
             {
                 this.currentModel = value;
                 this.RaisePropertyChanged("CurrentModel");
+            }
+        }
+
+        public ObjectFile ActiveFile
+        {
+            get { return activeFile; }
+            set
+            {
+                this.activeFile = value;
+                this.RaisePropertyChanged("ActiveFile");
             }
         }
 

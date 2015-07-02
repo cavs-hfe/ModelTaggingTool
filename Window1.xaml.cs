@@ -44,8 +44,11 @@ namespace ModelViewer
         public Window1()
         {
             this.InitializeComponent();
+
             mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree);
             this.DataContext = mainViewModel;
+
+            CategoryComboBox.ItemsSource = mainViewModel.getCategories();
         }
 
         #region Object Loading and Selection
@@ -64,7 +67,12 @@ namespace ModelViewer
 
                 if (of != null)
                 {
-                    mainViewModel.LoadModel(of.FileName);
+                    mainViewModel.LoadModel(of);
+                    propertiesTabControl.IsEnabled = true;
+                }
+                else
+                {
+                    propertiesTabControl.IsEnabled = false;
                 }
             }
             e.Handled = true;
@@ -278,7 +286,7 @@ namespace ModelViewer
         {
             TabItem tc = filesTabControl.SelectedItem as TabItem;
             ListView lv = tc.Content as ListView;
-            
+
             if (lv.SelectedItems.Count > 0)
             {
                 mainViewModel.assignFiles(lv.SelectedItems);
@@ -386,6 +394,11 @@ namespace ModelViewer
         {
             mainViewModel.resetView();
 
+            unassignedListView.UnselectAll();
+            myFilesListView.UnselectAll();
+            reviewListView.UnselectAll();
+            approvedListView.UnselectAll();
+
             if (UnassignedTab.IsSelected)
             {
                 ApproveButton.IsEnabled = false;
@@ -459,6 +472,68 @@ namespace ModelViewer
         {
             mainViewModel.FileSaveScreenshot();
         }
+
+        private void propertiesTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+            if (tb != null)
+            {
+                mainViewModel.setFileFriendlyName(mainViewModel.ActiveFile.FileName, tb.Text);
+            }
+
+        }
+
+        private void CategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CategoryComboBox.SelectedItem != null && mainViewModel != null && !mainViewModel.ActiveFile.Category.Equals(CategoryComboBox.SelectedItem.ToString()))
+            {
+                mainViewModel.setCategory(mainViewModel.ActiveFile.FileId, CategoryComboBox.SelectedItem.ToString());
+            }
+
+        }
+        
+        private void CategoryComboBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (CategoryComboBox.Text != "" && mainViewModel != null)
+            {
+                mainViewModel.setCategory(mainViewModel.ActiveFile.FileId, CategoryComboBox.Text);
+                CategoryComboBox.ItemsSource = mainViewModel.getCategories();
+            }
+        }
+
+        private void ShadowsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ShadowsComboBox.SelectedItem != null && mainViewModel != null)
+            {
+                mainViewModel.setShadows(mainViewModel.ActiveFile.FileId, ShadowsComboBox.SelectedIndex);
+            }
+        }
+
+        private void ZUpComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ZUpComboBox.SelectedItem != null && mainViewModel != null)
+            {
+                mainViewModel.setZUp(mainViewModel.ActiveFile.FileId, ZUpComboBox.SelectedIndex);
+            }
+        }
+
+        private void PhysicsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PhysicsComboBox.SelectedItem != null && mainViewModel != null)
+            {
+                mainViewModel.setPhysicsGeometry(mainViewModel.ActiveFile.FileId, PhysicsComboBox.SelectedIndex);
+            }
+        }
+
+        private void FileComments_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            mainViewModel.setComments(mainViewModel.ActiveFile.FileId, FileComments.Text);
+        }  
     }
 
     public class SortAdorner : Adorner
