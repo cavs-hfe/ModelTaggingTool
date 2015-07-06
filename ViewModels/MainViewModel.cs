@@ -161,9 +161,20 @@ namespace ModelViewer
 
         public void addNewTag(string tag)
         {
-            string query = "INSERT INTO Tags (tag_name, parent) VALUES ('" + tag + "', 18);";
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
+            try
+            {
+                string query = "INSERT INTO Tags (tag_name, parent) VALUES ('" + tag + "', 18);";
+                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException e)
+            {
+                if (e.Number == 1062)  //dupliate key or index
+                {
+                    MessageBox.Show("This tag already exists. Please try again with a new tag name.", "Duplicate Tag", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
         }
 
         public void deleteTag(int tagId)
@@ -1029,6 +1040,87 @@ namespace ModelViewer
 
         }
 
+        public void renamePartInModel(string oldPart, string newPart)
+        {
+            //PLAN B: just modify obj file
+            try
+            {
+                //update object name in database - do this first, if this throws exception, duplicate part name
+                renameObject(oldPart, newPart);
+
+                StreamReader reader = new StreamReader(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName));
+                StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
+
+                string temp = "";
+                while ((temp = reader.ReadLine()) != null)
+                {
+                    if (temp.StartsWith("g") && temp.Contains(oldPart))
+                    {
+                        writer.WriteLine("g " + newPart);
+                    }
+                    else
+                    {
+                        writer.WriteLine(temp);
+                    }
+                }
+
+                reader.Close();
+                writer.Close();
+
+                //backup current obj
+                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".back" + System.DateTime.Now.ToFileTime());
+
+                //copy temp to current obj
+                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), true);
+
+                //Delete temp file
+                File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
+
+                refreshSubObjects(this.ActiveFile.FileId);
+            }
+            catch (MySqlException e)
+            {
+                if (e.Number == 1062)
+                {
+                    MessageBox.Show("A part with this name already exists. Either merge the parts or pick a new part name.", "Duplicate Part", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    System.Console.WriteLine(e.Message);
+                }
+
+            }
+            //PLAN A: exporter broken...
+            /*if (CurrentModel != null)
+            {
+                foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
+                {
+                    if (gm.GetName().Equals(oldPart))
+                    {
+                        gm.SetName(newPart);
+                    }
+                }
+
+                //export new model
+                ModelViewer.Exporter.ObjExporter exporter = new ModelViewer.Exporter.ObjExporter();
+                exporter.MaterialsFile = "newmodel.mtl";
+
+                ModelVisual3D mv = this.viewport.Viewport.Children[1] as ModelVisual3D;
+                ModelVisual3D mv2 = mv.Children[1] as ModelVisual3D;
+                Model3DGroup mg = mv2.Content as Model3DGroup;
+                GeometryModel3D model = mg.Children[0] as GeometryModel3D;
+
+
+                exporter.Export(model, new FileStream(@"I:\projects\ERS\Task-04\users\rsween\newmodel.obj", FileMode.CreateNew));
+
+                //File.Create(@"I:\projects\ERS\Task-04\users\rsween\newmodel.obj");
+                //exporter.ExportModel(new ModelViewer.Exporter.ObjExporter.ObjWriters(), visual.Traverse<GeometryModel3D>((m, t) => this.ExportModel(writer, m, t)));
+                
+                //update object name in database
+
+            }*/
+        }
+
         private void renameObject(string oldName, string newName)
         {
             int fileId = getFileIdByFileName(this.CurrentModelPath);
@@ -1044,6 +1136,76 @@ namespace ModelViewer
                 }
             }
         }
+
+        /*public void mergeParts(System.Collections.IList oldParts, string newName)
+        {
+            //PLAN B: just modify obj file
+            try
+            {
+                //update object name in database - do this first, if this throws exception, duplicate part name
+                renameObject(oldPart, newPart);
+
+                StreamReader reader = new StreamReader(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName));
+                StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
+
+                string temp = "";
+                while ((temp = reader.ReadLine()) != null)
+                {
+                    if (temp.StartsWith("g") && temp.Contains(oldPart))
+                    {
+                        writer.WriteLine("g " + newPart);
+                    }
+                    else
+                    {
+                        writer.WriteLine(temp);
+                    }
+                }
+
+                reader.Close();
+                writer.Close();
+
+                //backup current obj
+                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".back" + System.DateTime.Now.ToFileTime());
+
+                //copy temp to current obj
+                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), true);
+
+                //Delete temp file
+                File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
+
+                refreshSubObjects(this.ActiveFile.FileId);
+            }
+            catch (MySqlException e)
+            {
+                if (e.Number == 1062)
+                {
+                    MessageBox.Show("A part with this name already exists. Either merge the parts or pick a new part name.", "Duplicate Part", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    System.Console.WriteLine(e.Message);
+                }
+
+            }
+        }
+
+        private void mergePartsInDatabase(System.Collections.IList oldParts, string newName)
+        {
+            string query = "SELECT * FROM Object_Tag WHERE object_id = " + ((SubObject)oldParts[0]).Id;
+            for (int i = 1; i < oldParts.Count; i++)
+            {
+                query += " OR object_id = " + ((SubObject)oldParts[i]).Id;
+            }
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            //populate the root file object with database entries
+            foreach (DataRow row in table.Rows)
+            {
+                
+            }
+        }*/
 
         public List<string> getCategories()
         {

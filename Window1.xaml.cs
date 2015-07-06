@@ -552,6 +552,34 @@ namespace ModelViewer
             }
 
         }
+
+        private void mnuEditPartName_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
+            ListViewItem lvi = cm.PlacementTarget as ListViewItem;
+            SubObject so = lvi.Content as SubObject;
+
+            EditPartDialog epd = new EditPartDialog("Enter a new part name:", so.Name);
+            if (epd.ShowDialog() == true)
+            {
+                mainViewModel.renamePartInModel(so.Name, epd.PartName);
+            }
+        }
+
+        private void mnuMergeParts_Click(object sender, RoutedEventArgs e)
+        {
+            EditPartDialog epd = new EditPartDialog("Enter a name for the merged part:", "");
+            if (epd.ShowDialog() == true)
+            {
+                mainViewModel.mergeParts(objectsList.SelectedItems, epd.PartName);
+            }
+        }
+
+        private void OnListViewItemPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            
+            e.Handled = true;
+        }
     }
 
     public class SortAdorner : Adorner

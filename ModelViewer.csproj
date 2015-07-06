@@ -122,6 +122,10 @@
     <Compile Include="Dialogs\CheckValidityDialog.xaml.cs">
       <DependentUpon>CheckValidityDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\EditPartDialog.xaml.cs">
+      <DependentUpon>EditPartDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Exporter\ObjExporter.cs" />
     <Compile Include="Importer\CAVS_ModelImporter.cs" />
     <Compile Include="Importer\CAVS_ObjReader.cs" />
     <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
@@ -132,6 +136,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialogs\CheckValidityDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\EditPartDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

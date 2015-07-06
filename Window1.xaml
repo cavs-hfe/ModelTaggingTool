@@ -212,9 +212,21 @@
 
             <GridSplitter Grid.Row="2" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
 
-            <TextBlock Grid.Row="3">Objects:</TextBlock>
+            <TextBlock Grid.Row="3">Parts:</TextBlock>
 
-            <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged" SelectionMode="Single">
+            <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged" SelectionMode="Multiple">
+                <ListView.Resources>
+                    <ContextMenu x:Key="ContextMnu">
+                        <MenuItem x:Name="mnuEditPartName" Header="Edit Part Name" Click="mnuEditPartName_Click"/>
+                        <MenuItem x:Name="mnuMergeParts" Header="Merge Parts" Click="mnuMergeParts_Click"/>
+                    </ContextMenu>
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
+                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnListViewItemPreviewMouseRightButtonDown" />
+                    </Style>                    
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <WrapPanel>

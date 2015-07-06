@@ -22,6 +22,7 @@ namespace ModelViewer
         public NewTagDialog()
         {
             InitializeComponent();
+            tag_name.Focus();
         }
 
         private void btnDialogOk_Click(object sender, RoutedEventArgs e)
