@@ -234,7 +234,7 @@ namespace ModelViewer
         {
             if (tagTree.SelectedItem != null)
             {
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this tag? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                /*MessageBoxResult result = MessageBox.Show("Are you sure you want to delete this tag? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
                     TreeViewItem item = tagTree.SelectedItem as TreeViewItem;
@@ -243,7 +243,7 @@ namespace ModelViewer
                         mainViewModel.deleteTag(item.Header as string);
                     }
                     mainViewModel.refreshTagTree();
-                }
+                }*/
 
             }
 
@@ -496,7 +496,7 @@ namespace ModelViewer
             }
 
         }
-        
+
         private void CategoryComboBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             if (CategoryComboBox.Text != "" && mainViewModel != null)
@@ -533,7 +533,25 @@ namespace ModelViewer
         private void FileComments_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             mainViewModel.setComments(mainViewModel.ActiveFile.FileId, FileComments.Text);
-        }  
+        }
+
+        private void mnuDeleteTag_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
+            TreeViewItem item = cm.PlacementTarget as TreeViewItem;
+            TagViewModel tvm = item.Header as TagViewModel;
+
+            if (tvm != null)
+            {
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the tag: " + tvm.Name + "? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                {
+                    mainViewModel.deleteTag(tvm.Id);
+                    mainViewModel.refreshTagTree();
+                }
+            }
+
+        }
     }
 
     public class SortAdorner : Adorner

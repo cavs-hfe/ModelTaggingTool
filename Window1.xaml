@@ -275,18 +275,18 @@
                     <Button x:Name="RefreshTags" Click="RefreshTags_Click" ToolTip="Refresh Tags">
                         <Image Source="/Images/Command-Refresh-32.png" Width="25" Height="25" />
                     </Button>
-                    <Button x:Name="DeleteTag" Click="DeleteTag_Click" ToolTip="Delete Selected Tag">
+                    <!--<Button x:Name="DeleteTag" Click="DeleteTag_Click" ToolTip="Delete Selected Tag">
                         <Image Source="/Images/Delete-128.png" Width="25" Height="25" />
-                    </Button>
+                    </Button>-->
                 </ToolBar>
             </ToolBarTray>
 
             <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}" Grid.Row="1">
-                <!--<TreeView.Resources>
+                <TreeView.Resources>
                     <ContextMenu x:Key="ContextMnu">
-                        <MenuItem x:Name="mnuMarkReviewed" Header="Mark As Reviewed" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuMarkReviewed_Click"/>
+                        <MenuItem x:Name="mnuDeleteTag" Header="Delete Tag" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuDeleteTag_Click"/>
                     </ContextMenu>
-                </TreeView.Resources>-->
+                </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="OnPreviewLeftMouseButtonDown" />
@@ -297,8 +297,8 @@
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                         <Setter Property="IsEnabled" Value="{Binding IsEnabled, Mode=OneWay}" />
-                        <!--<Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
-                        <Style.Triggers>
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
+                        <!--<Style.Triggers>
                             <DataTrigger Binding="{Binding IsReviewed}" Value="False">
                                 <Setter Property="FontWeight" Value="Bold" />
                             </DataTrigger>

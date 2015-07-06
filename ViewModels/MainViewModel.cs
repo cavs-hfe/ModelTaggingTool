@@ -166,9 +166,9 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
-        public void deleteTag(string tag)
+        public void deleteTag(int tagId)
         {
-            string query = "DELETE FROM Tags WHERE tag_name = '" + tag + "';";
+            string query = "DELETE FROM Tags WHERE tag_id = " + tagId + ";";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
         }
@@ -1327,7 +1327,7 @@ namespace ModelViewer
                     ////start object elements
                     await writer.WriteStartElementAsync(null, "object", null);
                     await writer.WriteAttributeStringAsync(null, "name", null, ConvertFromDBValue<string>(row["friendly_name"]));
-                    await writer.WriteAttributeStringAsync(null, "category", null, "Obstacles");
+                    await writer.WriteAttributeStringAsync(null, "category", null, ConvertFromDBValue<string>(row["category"]));
                     await writer.WriteAttributeStringAsync(null, "preview", null, ConvertFromDBValue<string>(row["screenshot"]));
 
                     //////start representations
@@ -1335,8 +1335,22 @@ namespace ModelViewer
                     ////////start ogre3d
                     await writer.WriteStartElementAsync(null, "ogre3d", null);
                     await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
-                    await writer.WriteAttributeStringAsync(null, "shadows", null, "off");
-                    await writer.WriteAttributeStringAsync(null, "zUp", null, "false");
+                    if (ConvertFromDBValue<int>(row["shadows"]).Equals(0))
+                    {
+                        await writer.WriteAttributeStringAsync(null, "shadows", null, "off");
+                    }
+                    else
+                    {
+                        await writer.WriteAttributeStringAsync(null, "shadows", null, "on");
+                    }
+                    if (ConvertFromDBValue<int>(row["zUp"]).Equals(0))
+                    {
+                        await writer.WriteAttributeStringAsync(null, "zUp", null, "false");
+                    }
+                    else
+                    {
+                        await writer.WriteAttributeStringAsync(null, "zUp", null, "true");
+                    }
                     await writer.WriteEndElementAsync();
                     /////////end ogre3d
 
@@ -1405,7 +1419,14 @@ namespace ModelViewer
                     await writer.WriteStartElementAsync(null, "shape", null);
                     await writer.WriteAttributeStringAsync(null, "type", null, "triMesh");
                     await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
-                    await writer.WriteAttributeStringAsync(null, "upAxis", null, "y");
+                    if (ConvertFromDBValue<int>(row["zUp"]).Equals(0))
+                    {
+                        await writer.WriteAttributeStringAsync(null, "upAxis", null, "y");
+                    }
+                    else
+                    {
+                        await writer.WriteAttributeStringAsync(null, "upAxis", null, "z");
+                    }
                     await writer.WriteEndElementAsync();
                     //////////end shape
                     await writer.WriteEndElementAsync();
