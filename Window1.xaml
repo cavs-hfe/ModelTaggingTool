@@ -214,7 +214,7 @@
 
             <TextBlock Grid.Row="3">Parts:</TextBlock>
 
-            <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged" SelectionMode="Multiple">
+            <ListView Grid.Row="4" x:Name="objectsList" ItemsSource="{Binding SubObjects}" SelectionChanged="objectsList_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ContextMnu">
                         <MenuItem x:Name="mnuEditPartName" Header="Edit Part Name" Click="mnuEditPartName_Click"/>

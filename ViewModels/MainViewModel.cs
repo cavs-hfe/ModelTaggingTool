@@ -719,7 +719,7 @@ namespace ModelViewer
 
         private void addModelToDatabase(string filename)
         {
-            string query = "INSERT INTO Files (file_name, friendly_name, uploaded_by) VALUES ('" + filename + "', 'object', '" + this.CurrentUser + "');";
+            string query = "INSERT INTO Files (file_name, friendly_name, uploaded_by) VALUES ('" + filename + "', '" + Path.GetFileNameWithoutExtension(filename) + "', '" + this.CurrentUser + "');";
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             cmd.ExecuteNonQuery();
         }
@@ -1137,43 +1137,86 @@ namespace ModelViewer
             }
         }
 
-        /*public void mergeParts(System.Collections.IList oldParts, string newName)
+        public void mergeParts(IList<SubObject> oldParts, string newName)
         {
+            List<string> oldPartNames = new List<string>();
+            foreach (SubObject so in oldParts)
+            {
+                oldPartNames.Add(so.Name);
+            }
+
             //PLAN B: just modify obj file
             try
             {
                 //update object name in database - do this first, if this throws exception, duplicate part name
-                renameObject(oldPart, newPart);
-
-                StreamReader reader = new StreamReader(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName));
-                StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
-
-                string temp = "";
-                while ((temp = reader.ReadLine()) != null)
+                //if the part doesn't exist, or it part of the merge list, continue
+                if (doesPartExist(newName) || oldPartNames.Contains(newName))
                 {
-                    if (temp.StartsWith("g") && temp.Contains(oldPart))
+                    //find all tags assigned to old parts 
+                    string query = "SELECT DISTINCT tag_id, tagged_by FROM Object_Tag WHERE object_id = " + oldParts[0].Id;
+                    for (int i = 1; i < oldParts.Count; i++)
                     {
-                        writer.WriteLine("g " + newPart);
+                        query += " OR object_id = " + oldParts[i].Id;
                     }
-                    else
+
+                    MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+                    DataTable table = new DataTable();
+                    adapter.Fill(table);
+
+                    //delete old parts from database
+                    query = "DELETE FROM Objects WHERE object_id = " + oldParts[0].Id;
+                    for (int i = 1; i < oldParts.Count; i++)
                     {
-                        writer.WriteLine(temp);
+                        query += " OR object_id = " + oldParts[i].Id;
                     }
+                    MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                    cmd.ExecuteNonQuery();
+
+                    //insert new part into database
+                    query = "INSERT INTO Objects (file_id, object_name) VALUES (" + this.ActiveFile.FileId+ ", '" + newName + "');";
+                    cmd = new MySqlCommand(query, sqlConnection);
+                    cmd.ExecuteNonQuery();
+
+                    int newObjectId = getObjectId(this.ActiveFile.FileId, newName);
+
+                    //add tags to new part
+                    foreach (DataRow row in table.Rows)
+                    {
+                        query = "INSERT INTO Object_Tag (object_id, tag_id, tagged_by) VALUES (" + newObjectId + ", " + row["tag_id"] + ", '" + row["tagged_by"] + "')";
+                        cmd = new MySqlCommand(query, sqlConnection);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    StreamReader reader = new StreamReader(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName));
+                    StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
+
+                    string temp = "";
+                    while ((temp = reader.ReadLine()) != null)
+                    {
+                        if (temp.StartsWith("g") && stringContainsPart(temp, oldPartNames))
+                        {
+                            writer.WriteLine("g " + newName);
+                        }
+                        else
+                        {
+                            writer.WriteLine(temp);
+                        }
+                    }
+
+                    reader.Close();
+                    writer.Close();
+
+                    //backup current obj
+                    File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".back" + System.DateTime.Now.ToFileTime());
+
+                    //copy temp to current obj
+                    File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), true);
+
+                    //Delete temp file
+                    File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
+
+                    refreshSubObjects(this.ActiveFile.FileId);
                 }
-
-                reader.Close();
-                writer.Close();
-
-                //backup current obj
-                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".back" + System.DateTime.Now.ToFileTime());
-
-                //copy temp to current obj
-                File.Copy(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName), true);
-
-                //Delete temp file
-                File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
-
-                refreshSubObjects(this.ActiveFile.FileId);
             }
             catch (MySqlException e)
             {
@@ -1183,9 +1226,39 @@ namespace ModelViewer
                 }
                 else
                 {
-                    System.Console.WriteLine(e.Message);
+                    System.Console.WriteLine(e.Message + " \n " + e.StackTrace);
                 }
 
+            }
+        }
+
+        private bool stringContainsPart(string s, List<string> p)
+        {
+            foreach (string part in p)
+            {
+                if (s.Contains(part))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool doesPartExist(string partName)
+        {
+            string query = "SELECT * FROM Objects WHERE object_name = '" + partName + "' AND file_id = " + this.ActiveFile.FileId;
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            if (reader.HasRows)
+            {
+                reader.Close();
+                return true;
+            }
+            else
+            {
+                reader.Close();
+                return false;
             }
         }
 
@@ -1203,9 +1276,9 @@ namespace ModelViewer
             //populate the root file object with database entries
             foreach (DataRow row in table.Rows)
             {
-                
+
             }
-        }*/
+        }
 
         public List<string> getCategories()
         {

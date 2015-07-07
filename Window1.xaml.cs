@@ -503,6 +503,7 @@ namespace ModelViewer
             {
                 mainViewModel.setCategory(mainViewModel.ActiveFile.FileId, CategoryComboBox.Text);
                 CategoryComboBox.ItemsSource = mainViewModel.getCategories();
+                mainViewModel.ActiveFile.Category = CategoryComboBox.Text;
             }
         }
 
@@ -571,7 +572,13 @@ namespace ModelViewer
             EditPartDialog epd = new EditPartDialog("Enter a name for the merged part:", "");
             if (epd.ShowDialog() == true)
             {
-                mainViewModel.mergeParts(objectsList.SelectedItems, epd.PartName);
+                List<SubObject> solist = new List<SubObject>();
+                foreach (SubObject so in objectsList.SelectedItems)
+                {
+                    solist.Add(so);
+                }
+
+                mainViewModel.mergeParts(solist, epd.PartName);
             }
         }
 
