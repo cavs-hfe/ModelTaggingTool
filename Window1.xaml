@@ -69,7 +69,7 @@
                 </Image.Style>
             </Image>
         </DataTemplate>
-        
+
     </Window.Resources>
     <Grid>
 
@@ -225,7 +225,7 @@
                     <Style TargetType="ListViewItem">
                         <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
                         <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnListViewItemPreviewMouseRightButtonDown" />
-                    </Style>                    
+                    </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -329,7 +329,7 @@
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-            
+
             <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="2" SelectionChanged="propertiesTabControl_SelectionChanged" IsEnabled="False">
                 <TabItem x:Name="propertiesTab" Header="File Properties">
                     <Grid ScrollViewer.CanContentScroll="True">
@@ -350,9 +350,9 @@
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
-                        
+
                         <TextBlock Grid.Row="0" Grid.Column="0">Properties:</TextBlock>
-                        
+
                         <!-- File Name -->
                         <TextBlock Grid.Row="1" Grid.Column="0">File Name:</TextBlock>
                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Path=ActiveFile.FileName}" IsEnabled="False"/>
@@ -375,14 +375,14 @@
                         <TextBlock Grid.Row="6" Grid.Column="0">Shadows:</TextBlock>
                         <ComboBox Grid.Row="6" Grid.Column="1" SelectedIndex="{Binding Path=ActiveFile.Shadows}" x:Name="ShadowsComboBox" SelectionChanged="ShadowsComboBox_SelectionChanged">
                             <ComboBoxItem IsSelected="True">Off</ComboBoxItem>
-                            <ComboBoxItem>On</ComboBoxItem>                            
+                            <ComboBoxItem>On</ComboBoxItem>
                         </ComboBox>
-                        
+
                         <!-- Z Up -->
                         <TextBlock Grid.Row="7" Grid.Column="0">Z-Up:</TextBlock>
                         <ComboBox Grid.Row="7" Grid.Column="1" SelectedIndex="{Binding Path=ActiveFile.ZUp}" x:Name="ZUpComboBox" SelectionChanged="ZUpComboBox_SelectionChanged">
                             <ComboBoxItem>False</ComboBoxItem>
-                            <ComboBoxItem IsSelected="True">True</ComboBoxItem>   
+                            <ComboBoxItem IsSelected="True">True</ComboBoxItem>
                         </ComboBox>
 
                         <Separator Grid.Row="8" Grid.ColumnSpan="2" />
@@ -402,10 +402,34 @@
                     <Image x:Name="ScreenshotDisplay" Source="{Binding Path=ActiveFile.ScreenshotImageSource}" Stretch="Fill"/>
                 </TabItem>
                 <TabItem x:Name="FileCommentsTab" Header="Comments">
-                    <TextBox x:Name="FileComments" Text="{Binding Path=ActiveFile.Comments}" LostKeyboardFocus="FileComments_LostKeyboardFocus" TextWrapping="Wrap" AcceptsReturn="True"/>
+                    <!--<TextBox x:Name="FileComments" Text="{Binding Path=ActiveFile.Comments}" LostKeyboardFocus="FileComments_LostKeyboardFocus" TextWrapping="Wrap" AcceptsReturn="True"/>-->
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ListView Grid.Row="0" Grid.ColumnSpan="2" ItemsSource="{Binding Path=ActiveFile.Comments}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <WrapPanel>
+                                        <TextBlock Foreground="{Binding Color}" Text="{Binding User}" />
+                                        <TextBlock>:</TextBlock>
+                                        <TextBlock Text="{Binding CommentText}" />
+                                    </WrapPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <TextBox x:Name="CommentTextBox" Grid.Row="1" Grid.Column="0"></TextBox>
+                        <Button x:Name="SubmitComment" Grid.Row="1" Grid.Column="1" Width="75">Add</Button>
+
+                    </Grid>
                 </TabItem>
             </TabControl>
-            
+
         </Grid>
 
         <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />

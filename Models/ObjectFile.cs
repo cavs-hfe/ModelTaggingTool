@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ModelViewer.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -69,12 +70,12 @@ namespace ModelViewer
         public int ZUp { get; set; }
         public int PhysicsGeometry { get; set; }
 
-        public string Comments { get; set; }
+        public List<Comment> Comments { get; set; }
 
         public ObjectFile(string fileName, string friendlyName)
-            : this(-1, fileName, friendlyName, "", "", false, "", "", "", "", "", 0, 0, 0) { }
+            : this(-1, fileName, friendlyName, "", "", false, "", "", "", "", 0, 0, 0) { }
 
-        public ObjectFile(int fileId, string fileName, string friendlyName, string screenshot, string fullScreenshotPath, bool hasTags, string uploadedBy, string currentUser, string reviewedBy, string comments, string category, int shadows, int zUp, int physicsGeometry)
+        public ObjectFile(int fileId, string fileName, string friendlyName, string screenshot, string fullScreenshotPath, bool hasTags, string uploadedBy, string currentUser, string reviewedBy, string category, int shadows, int zUp, int physicsGeometry)
         {
             this.FileId = fileId;
             this.FileName = fileName;
@@ -93,7 +94,6 @@ namespace ModelViewer
             this.UploadedBy = uploadedBy;
             this.CurrentUser = currentUser;
             this.ReviewedBy = reviewedBy;
-            this.Comments = comments;
             this.Category = category;
             this.Shadows = shadows;
             this.ZUp = zUp;

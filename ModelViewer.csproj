@@ -164,6 +164,7 @@
     <Compile Include="DelegateCommand.cs" />
     <Compile Include="FileDialogService.cs" />
     <Compile Include="IFileDialogService.cs" />
+    <Compile Include="Models\Comment.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="Dialogs\NewTagDialog.xaml.cs">
       <DependentUpon>NewTagDialog.xaml</DependentUpon>

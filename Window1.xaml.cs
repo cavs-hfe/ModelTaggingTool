@@ -533,7 +533,7 @@ namespace ModelViewer
 
         private void FileComments_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            mainViewModel.setComments(mainViewModel.ActiveFile.FileId, FileComments.Text);
+            //mainViewModel.setComments(mainViewModel.ActiveFile.FileId, FileComments.Text);
         }
 
         private void mnuDeleteTag_Click(object sender, RoutedEventArgs e)
