@@ -29,6 +29,7 @@ namespace ModelViewer
     using Microsoft.WindowsAPICodePack.Dialogs;
     using System.Xml;
     using ModelViewer.Models;
+    using ModelViewer.Exporter;
 
 
     public class MainViewModel : Observable
@@ -90,6 +91,7 @@ namespace ModelViewer
             this.viewport = viewport;
             this.FileOpenCommand = new DelegateCommand(this.FileOpen);
             this.FileExportCommand = new DelegateCommand(this.FileExport);
+            this.FileExportANVELCommand = new DelegateCommand(this.FileExportANVELObject);
             this.FileExportXMLCommand = new DelegateCommand(this.FileExportXML);
             this.FileSaveScreenshotCommand = new DelegateCommand(this.FileSaveScreenshot);
             this.FileExitCommand = new DelegateCommand(FileExit);
@@ -1606,6 +1608,8 @@ namespace ModelViewer
 
         public ICommand FileExportXMLCommand { get; set; }
 
+        public ICommand FileExportANVELCommand { get; set; }
+
         public ICommand FileSaveScreenshotCommand { get; set; }
 
         public ICommand FileExitCommand { get; set; }
@@ -1636,6 +1640,15 @@ namespace ModelViewer
             }
 
             this.viewport.Export(path);
+        }
+
+        private void FileExportANVELObject()
+        {
+            OgreMeshExporter oxe = new OgreMeshExporter();
+            oxe.ParseAndConvertFileToXml(this.CurrentModelPath, Path.Combine(Path.GetDirectoryName(this.CurrentModelPath), Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".mesh.xml"));
+
+            OgreMaterialExporter ome = new OgreMaterialExporter();
+            ome.Export(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), Path.GetFileNameWithoutExtension(this.ActiveFile.FileName) + ".mtl"));
         }
 
         private async void FileExportXML()

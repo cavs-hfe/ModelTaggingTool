@@ -126,6 +126,8 @@
       <DependentUpon>EditPartDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Exporter\ObjExporter.cs" />
+    <Compile Include="Exporter\OgreMaterialExporter.cs" />
+    <Compile Include="Exporter\OgreMeshExporter.cs" />
     <Compile Include="Importer\CAVS_ModelImporter.cs" />
     <Compile Include="Importer\CAVS_ObjReader.cs" />
     <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
@@ -276,7 +278,15 @@
   <ItemGroup>
     <Resource Include="Images\Images-32.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="lib\OgreMain.dll" />
+    <Content Include="lib\OgreXMLConverter.exe" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)\lib\OgreMain.dll" "$(TargetDir)\OgreMain.dll"
+copy "$(ProjectDir)\lib\OgreXMLConverter.exe" "$(TargetDir)\OgreXMLConverter.exe"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

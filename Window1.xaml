@@ -87,7 +87,8 @@
         <Menu Grid.Row="0" Grid.ColumnSpan="3">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
-                <MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>
+                <!--<MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>-->
+                <MenuItem Header="Export Object to ANVEL" Command="{Binding FileExportANVELCommand}" />
                 <MenuItem Header="Export XML" Command="{Binding FileExportXMLCommand}" />
                 <!--<MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />-->
                 <Separator/>
