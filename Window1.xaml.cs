@@ -43,12 +43,17 @@ namespace ModelViewer
         /// </summary>
         public Window1()
         {
+            SplashScreen ss = new SplashScreen("/Images/SplashScreen.png");
+            ss.Show(false);
+
             this.InitializeComponent();
 
             mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree);
             this.DataContext = mainViewModel;
 
             CategoryComboBox.ItemsSource = mainViewModel.getCategories();
+
+            ss.Close(TimeSpan.FromSeconds(0.3));
         }
 
         #region Object Loading and Selection

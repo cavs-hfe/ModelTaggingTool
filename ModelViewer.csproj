@@ -286,6 +286,7 @@
     <Resource Include="Images\Images-32.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Images\SplashScreen.png" />
     <Content Include="lib\OgreMain.dll" />
     <Content Include="lib\OgreXMLConverter.exe" />
   </ItemGroup>
