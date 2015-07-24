@@ -30,6 +30,7 @@ namespace ModelViewer
     using System.Xml;
     using ModelViewer.Models;
     using ModelViewer.Exporter;
+    using System.Diagnostics;
 
 
     public class MainViewModel : Observable
@@ -78,6 +79,8 @@ namespace ModelViewer
 
         private Queue<Brush> commentColors = new Queue<Brush>(new[] { Brushes.Red, Brushes.Blue, Brushes.Green, Brushes.Orange, Brushes.Purple, Brushes.Yellow, Brushes.Cyan, Brushes.Violet });
 
+        private int percentageComplete = 0;
+
         public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree)
         {
             if (viewport == null)
@@ -103,6 +106,7 @@ namespace ModelViewer
             this.CheckDataValidityCommand = new DelegateCommand(this.checkValidityOfDatabase);
             this.ApplicationTitle = "3D Model Tagging Tool";
 
+            //get current user and model directory from Settings
             CurrentUser = Properties.Settings.Default.CurrentUser;
             ModelDirectory = Properties.Settings.Default.ModelDirectoryPath;
 
@@ -113,14 +117,15 @@ namespace ModelViewer
                 Settings();
             }
 
+            //set up and open mySql connection
             sqlConnection = new MySqlConnection("server=Mitchell.HPC.MsState.Edu; database=cavs_ivp04;Uid=cavs_ivp04_user;Pwd=TLBcEsm7;");
 
             try
             {
                 sqlConnection.Open();
 
+                //get the tag tree and file list information from the database
                 refreshTagTree();
-
                 refreshFileLists();
             }
             catch (Exception e)
@@ -133,9 +138,11 @@ namespace ModelViewer
 
         #region Tag Tree Methods
 
+        /// <summary>
+        ///  and populate the rootTagView, updating the tag tree UI.
+        /// </summary>
         public void refreshTagTree()
         {
-
             Tag rootTag = new Tag(18, "Tags:", -1);
             rootTag = PopulateRootTag(rootTag);
             rootTagView = new TagViewModel(rootTag);
@@ -146,14 +153,20 @@ namespace ModelViewer
 
         }
 
-
+        /// <summary>
+        /// Recursive method to build the tag hierarchy from the database. 
+        /// </summary>
+        /// <param name="parentTag">The Tag of which to find the child Tags.</param>
+        /// <returns>The parentTag populated with all of its children.</returns>
         private Tag PopulateRootTag(Tag parentTag)
         {
+            //get everything from the Tags table where the parent Id is the Id of the current tag
             string query = "SELECT * FROM Tags WHERE parent = " + parentTag.Id;
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
 
+            //for each row in the result set, create a Tag object, call this method, then add it to the parent tag.
             foreach (DataRow row in table.Rows)
             {
                 Tag tag = new Tag(Convert.ToInt32(row["tag_id"]), row["tag_name"].ToString(), Convert.ToInt32(row["parent"]));
@@ -161,15 +174,21 @@ namespace ModelViewer
                 parentTag.Children.Add(tag);
             }
 
+            //return the parent tag that has now been populated with all of its child tags in the database
             return parentTag;
         }
 
         #endregion
 
+        /// <summary>
+        /// Add a new tag to the database. Tag will be added as to the root tag by default. The user can drag it to the correct place in the heirarchy after it is added.
+        /// </summary>
+        /// <param name="tag">Name of tag to be added to the database.</param>
         public void addNewTag(string tag)
         {
             try
             {
+                //insert into Tags the new tag name and set the parent ID to 18 (the root tag)
                 string query = "INSERT INTO Tags (tag_name, parent) VALUES ('" + tag + "', 18);";
                 MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                 cmd.ExecuteNonQuery();
@@ -184,6 +203,10 @@ namespace ModelViewer
 
         }
 
+        /// <summary>
+        /// Delete a tag from the database. Note that this will also delete all child tags from the database as well.
+        /// </summary>
+        /// <param name="tagId">ID of tag to be deleted.</param>
         public void deleteTag(int tagId)
         {
             string query = "DELETE FROM Tags WHERE tag_id = " + tagId + ";";
@@ -191,6 +214,11 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Update the parent ID of a tag.
+        /// </summary>
+        /// <param name="child">ID of child tag.</param>
+        /// <param name="newParent">Name of new parent tag.</param>
         public void updateParentTag(int child, int newParent)
         {
             if (child != newParent && !isTagChild(newParent, child))
@@ -234,10 +262,16 @@ namespace ModelViewer
 
         #region Assign Tag
 
+        /// <summary>
+        /// Assign a tag to an object.
+        /// </summary>
+        /// <param name="objectID">ID of object that is being tagged.</param>
+        /// <param name="tagID">ID of tag to be assigned to object.</param>
         public void assignTagToObject(int objectID, int tagID)
         {
             try
             {
+                //insert into the Object_Tag database the object and tagging, as well as the user who is doing the tagging
                 string query = "INSERT INTO Object_Tag (object_id, tag_id, tagged_by, reviewed) VALUES (" + objectID + ", " + tagID + ", '" + CurrentUser + "', 0)";
                 MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                 cmd.ExecuteNonQuery();
@@ -249,10 +283,16 @@ namespace ModelViewer
 
         }
 
+        /// <summary>
+        /// Remove a tag from an object.
+        /// </summary>
+        /// <param name="objectID">ID of object that is being untagged.</param>
+        /// <param name="tagID">ID of tag to be removed from object.</param>
         public void unassignTagFromObject(int objectID, int tagID)
         {
             try
             {
+                //delete the row that contains the object ID and tag ID
                 string query = "DELETE FROM Object_Tag WHERE object_id = " + objectID + " AND tag_id = " + tagID;
                 MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                 cmd.ExecuteNonQuery();
@@ -266,15 +306,22 @@ namespace ModelViewer
 
         #endregion
 
+        /// <summary>
+        /// Update the tag tree to show which tags are assigned to an object.
+        /// </summary>
+        /// <param name="objectId">The (currently selected) object to search for tags with.</param>
         public void showAssignedTags(int objectId)
         {
+            //refresh (and reset) tag tree to default state
             refreshTagTree();
 
+            //get the tag name where the object ID exists
             string query = "SELECT tag_name, reviewed FROM Object_Tag, Tags WHERE object_id = " + objectId + " AND Object_Tag.tag_id = Tags.tag_id;";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
 
+            //for each row in the result set, as long as it isn't the root tag, find the TagViewModel and set it checked
             foreach (DataRow row in table.Rows)
             {
                 //if the root tag is selected, ignore
@@ -294,32 +341,51 @@ namespace ModelViewer
 
         #region Review Tags
 
+        [Obsolete("Deprecated in favor of whole file review.")]
+        /// <summary>
+        /// Mark a tag as reviewed.
+        /// </summary>
+        /// <param name="tagId">ID of tag being reviewed.</param>
+        /// <param name="objectId">ID of object that tag is assigned to.</param>
         public void MarkTagAsReviewed(int tagId, int objectId)
         {
+            //if the current user is allowed to review the tag
             if (verifyTagReview(tagId, objectId))
             {
+                //update the database
                 reviewTag(tagId, objectId);
 
-                refreshTagTree();
-
+                //update the tag tree (tag should no longer be bolded)
                 showAssignedTags(objectId);
             }
-            else
+            else //otherwise show error
             {
                 MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+        [Obsolete("Deprectated as part of tag review. Process replaced with whole file review.")]
+        /// <summary>
+        /// Verify that the current user is allowed to mark a file as reviewed. Basically check that the current user is not the same user who assigned the tag to the object.
+        /// </summary>
+        /// <param name="tagId">ID of tag being reviewed.</param>
+        /// <param name="objectId">ID of object being reviewed.</param>
+        /// <returns>true if user should be allowed to mark as reviewed, false otherwise.</returns>
         private bool verifyTagReview(int tagId, int objectId)
         {
+            //get the user who assigned the tag to the object
             string query = "SELECT tagged_by FROM Object_Tag WHERE object_id = " + objectId + " AND tag_id = " + tagId;
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
             MySqlDataReader reader = cmd.ExecuteReader();
 
+            //deny by default
             bool allowed = false;
+            //if the tagging is found
             if (reader.Read())
             {
+                //get the user who tagged the object
                 string taggedBy = (string)reader["tagged_by"];
+                //if the tagger is not the current user, set the return variable to true
                 if (!taggedBy.Equals(this.CurrentUser))
                 {
                     allowed = true;
@@ -330,6 +396,12 @@ namespace ModelViewer
 
         }
 
+        [Obsolete("Deprectated as part of tag review. Process replaced with whole file review.")]
+        /// <summary>
+        /// Update database that tag has been reviewed.
+        /// </summary>
+        /// <param name="tagId">ID of tag being reviewed.</param>
+        /// <param name="objectId">ID of object being reviewed.</param>
         private void reviewTag(int tagId, int objectId)
         {
             string query = "UPDATE Object_Tag SET reviewed = 1, reviewed_by = '" + CurrentUser + "' WHERE object_id = " + objectId + " AND tag_id = " + tagId;
@@ -339,31 +411,32 @@ namespace ModelViewer
 
         #endregion
 
-
         #endregion
 
         #region Object Code
 
         #region Refresh File Tree
 
+        /// <summary>
+        /// Method to update all of the file lists in the file tabs.
+        /// </summary>
         public void refreshFileLists()
         {
-
-            //create the sub root file objects
             refreshUnassigned();
             refreshMyFiles();
             refreshReviewable();
             refreshComplete();
         }
 
+        /// <summary>
+        /// Get the unassigned files from the database and update the tab.
+        /// </summary>
         private void refreshUnassigned()
         {
+            //reset the unassigned file list variable
             unassignedFileList = new List<ObjectFile>();
 
-            //get files
-            //working query
-            //string query = "SELECT * FROM Files";
-            //updated query
+            //get files that are unassigned (current user == null and not reviewed)
             string query = "SELECT * FROM Files WHERE `current_user` IS NULL AND review_ready = 0";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
@@ -372,18 +445,22 @@ namespace ModelViewer
             //populate the root file object with database entries
             foreach (DataRow row in table.Rows)
             {
+                //get the tags assigned to any part of the file (used to set the tag icon next to the file name)
                 string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
                 adapter = new MySqlDataAdapter(query2, sqlConnection);
                 DataTable dt = new DataTable();
                 adapter.Fill(dt);
 
+                //get the comments associated with this file
                 string query3 = "SELECT * FROM Comments WHERE file_id = " + Convert.ToInt32(row["file_id"]);
                 adapter = new MySqlDataAdapter(query3, sqlConnection);
                 DataTable commentTable = new DataTable();
                 adapter.Fill(commentTable);
 
+                //declare the comments list
                 List<Comment> comments = new List<Comment>();
 
+                //for each comment, create a Comment object, assign a color and add to list
                 foreach (DataRow comment in commentTable.Rows)
                 {
                     Comment c = new Comment();
@@ -403,6 +480,7 @@ namespace ModelViewer
                     comments.Add(c);
                 }
 
+                //create the appropriate ObjectFile based on the number of rows in the tag result set
                 if (dt.Rows.Count > 0)
                 {
                     ObjectFile of = new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"]));
@@ -418,9 +496,13 @@ namespace ModelViewer
 
             }
 
+            //update property manager
             this.RaisePropertyChanged("UnassignedFiles");
         }
 
+        /// <summary>
+        /// Get current user's files from the database and update the tab.
+        /// </summary>
         private void refreshMyFiles()
         {
             myFileList = new List<ObjectFile>();
@@ -491,6 +573,9 @@ namespace ModelViewer
 
         }
 
+        /// <summary>
+        /// Get the review ready files from the database and update the tab.
+        /// </summary>
         private void refreshReviewable()
         {
             reviewFileList = new List<ObjectFile>();
@@ -563,6 +648,9 @@ namespace ModelViewer
             this.RaisePropertyChanged("ReviewFiles");
         }
 
+        /// <summary>
+        /// Get the complete files from the database and update the tab.
+        /// </summary>
         private void refreshComplete()
         {
             approvedFileList = new List<ObjectFile>();
@@ -635,6 +723,9 @@ namespace ModelViewer
 
         #region Add Model
 
+        /// <summary>
+        /// Menu Helper method to add a new model to the database. 
+        /// </summary>
         public void AddModel()
         {
             // Create OpenFileDialog 
@@ -650,50 +741,41 @@ namespace ModelViewer
             // Get the selected file name and display in a TextBox 
             if (ofd.ShowDialog() == CommonFileDialogResult.Ok)
             {
+                //batch import - for each file the user selected:
                 foreach (string s in ofd.FileNames)
                 {
+                    //if we successfully can copy all of the files to the Model Directory
                     if (CopyFiles(s))
                     {
                         //add to database
                         addModelToDatabase(Path.GetFileName(s));
 
+                        //update the file list
                         refreshFileLists();
 
+                        //load the model into the interface
                         LoadModel(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(s), Path.GetFileName(s)));
 
+                        //add the objects (parts) to the database
                         addObjectsToDatabase();
 
+                        //refresh the sub-objects (parts) list
                         refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
                     }
                 }
 
             }
-
-            /*string objectFile = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
-            //copy model files into new directory
-            if (objectFile != null)
-            {
-                if (CopyFiles(objectFile))
-                {
-                    //add to database
-                    addModelToDatabase(Path.GetFileName(objectFile));
-
-                    refreshFileLists();
-
-                    LoadModel(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(objectFile), Path.GetFileName(objectFile)));
-
-                    addObjectsToDatabase();
-
-                    refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
-                }
-            }*/
-
         }
 
+        /// <summary>
+        /// Copy all of the files related to an object file to the resource directory.
+        /// </summary>
+        /// <param name="path">Path to object file.</param>
+        /// <returns>True if all files copied successfully, false otherwise.</returns>
         private bool CopyFiles(string path)
         {
+            //set up resource dir (model directory + filename without extension)
             string resourceDir = Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(path));
-
 
             //check to see if model directory exists
             if (Directory.Exists(resourceDir))
@@ -786,6 +868,11 @@ namespace ModelViewer
 
         }
 
+        /// <summary>
+        /// Read through the .obj file and find all listings for .mtl files.
+        /// </summary>
+        /// <param name="path">Path to object file.</param>
+        /// <returns>List of .mtl files in the object file.</returns>
         private List<string> FindMtlFiles(string path)
         {
             List<string> files = new List<string>();
@@ -807,11 +894,11 @@ namespace ModelViewer
             return files;
         }
 
-        private void CopyMtlFiles(List<string> files)
-        {
-
-        }
-
+        /// <summary>
+        /// Read through the .mtl file and find all of the art assets.
+        /// </summary>
+        /// <param name="path">Path to .mtl file.</param>
+        /// <returns>List of all image file art assets in the .mtl file.</returns>
         private List<string> findAssets(string path)
         {
             List<string> files = new List<string>();
@@ -839,11 +926,10 @@ namespace ModelViewer
             return files;
         }
 
-        private void CopyAssets(List<string> files)
-        {
-
-        }
-
+        /// <summary>
+        /// Add the model to the database.
+        /// </summary>
+        /// <param name="filename">Name of file to be added to the database.</param>
         private void addModelToDatabase(string filename)
         {
             string query = "INSERT INTO Files (file_name, friendly_name, uploaded_by) VALUES ('" + filename + "', '" + Path.GetFileNameWithoutExtension(filename) + "', '" + this.CurrentUser + "');";
@@ -851,14 +937,19 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Add the sub-objects (parts) to the databse.
+        /// </summary>
         private void addObjectsToDatabase()
         {
             int fileId = getFileIdByFileName(this.currentModelPath);
 
+            //for each entry in the subobjects list
             foreach (string s in getSubObjects())
             {
                 try
                 {
+                    //insert into the database
                     string query = "INSERT INTO Objects (file_id, object_name) VALUES (" + fileId + ", '" + s + "');";
                     MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                     cmd.ExecuteNonQuery();
@@ -871,12 +962,14 @@ namespace ModelViewer
             }
         }
 
-
-
         #endregion
 
         #region Load Model
 
+        /// <summary>
+        /// Load a model into the viewport and update the subobject display.
+        /// </summary>
+        /// <param name="of">ObjectFile representing file to be loaded.</param>
         public void LoadModel(ObjectFile of)
         {
             this.CurrentModelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(of.FileName), of.FileName);
@@ -889,6 +982,10 @@ namespace ModelViewer
             refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
         }
 
+        /// <summary>
+        /// Load a model into the viewport and update the subobject display.
+        /// </summary>
+        /// <param name="filename">Path to file to be loaded.</param>
         public void LoadModel(string filename)
         {
             this.CurrentModelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(filename), filename);
@@ -900,6 +997,12 @@ namespace ModelViewer
             refreshSubObjects(getFileIdByFileName(this.CurrentModelPath));
         }
 
+        /// <summary>
+        /// Asynchronously load the model into memory from the model file.
+        /// </summary>
+        /// <param name="model3DPath">Path to model file.</param>
+        /// <param name="freeze">Whether to freeze the model.</param>
+        /// <returns>Model3DGroup that represents the model in the file.</returns>
         private async Task<Model3DGroup> LoadAsync(string model3DPath, bool freeze)
         {
             return await Task.Factory.StartNew(() =>
@@ -917,6 +1020,12 @@ namespace ModelViewer
             });
         }
 
+        /// <summary>
+        /// Load the model into memory from the model file.
+        /// </summary>
+        /// <param name="model3DPath">Path to model file.</param>
+        /// <param name="freeze">Whether to freeze the model.</param>
+        /// <returns>Model3DGroup that represents the model in the file.</returns>
         private Model3DGroup Load(string model3DPath, bool freeze)
         {
             if (File.Exists(model3DPath))
@@ -951,14 +1060,19 @@ namespace ModelViewer
 
         #endregion
 
+        /// <summary>
+        /// Delete multiple objects from the database.
+        /// </summary>
+        /// <param name="files">List of files to be deleted.</param>
         public void deleteObjects(System.Collections.IList files)
         {
-            //reset viewpoint
+            //reset viewport
             this.resetView();
 
+            //for each objectfile in the list
             foreach (ObjectFile f in files)
             {
-                //delete files too
+                //delete files
                 try
                 {
                     Directory.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(f.FileName)), true);
@@ -978,12 +1092,16 @@ namespace ModelViewer
             refreshFileLists();
         }
 
+        /// <summary>
+        /// Delete an object from the database.
+        /// </summary>
+        /// <param name="fileName">Name of file to be deleted.</param>
         public void deleteObject(string fileName)
         {
-            //reset viewpoint
+            //reset viewport
             this.resetView();
 
-            //delete files too
+            //delete files 
             Directory.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(fileName)), true);
 
             //remove from database
@@ -995,6 +1113,10 @@ namespace ModelViewer
             refreshFileLists();
         }
 
+        /// <summary>
+        /// Assign a list of files to the current user.
+        /// </summary>
+        /// <param name="files">List of ObjectFiles to be assigned to current user.</param>
         public void assignFiles(System.Collections.IList files)
         {
             foreach (ObjectFile f in files)
@@ -1004,6 +1126,11 @@ namespace ModelViewer
             this.refreshFileLists();
         }
 
+        /// <summary>
+        /// Assign a list of files to a given user.
+        /// </summary>
+        /// <param name="files">List of ObjectFiles to be assigned.</param>
+        /// <param name="username">User to assign files to.</param>
         public void assignFiles(System.Collections.IList files, string username)
         {
             foreach (ObjectFile f in files)
@@ -1013,12 +1140,21 @@ namespace ModelViewer
             this.refreshFileLists();
         }
 
+        /// <summary>
+        /// Assign a single file to the current user.
+        /// </summary>
+        /// <param name="fileId">ID of file to be assigned.</param>
         public void assignFile(int fileId)
         {
             assignFile(fileId, this.CurrentUser);
             this.refreshFileLists();
         }
 
+        /// <summary>
+        /// Assign the given file to the given username.
+        /// </summary>
+        /// <param name="fileId">ID of file to be assigned.</param>
+        /// <param name="username">Name of user to assign file to.</param>
         public void assignFile(int fileId, string username)
         {
             if (username != "")
@@ -1035,6 +1171,10 @@ namespace ModelViewer
             }
         }
 
+        /// <summary>
+        /// Set that a file tagging is complete and is ready for review in the database. Also updates the file lists after updating the database.
+        /// </summary>
+        /// <param name="fileId">ID of file to mark complete.</param>
         public void markFileComplete(int fileId)
         {
             string query = "UPDATE Files SET review_ready = 1, `current_user` = NULL WHERE file_id = " + fileId;
@@ -1044,6 +1184,10 @@ namespace ModelViewer
             this.refreshFileLists();
         }
 
+        /// <summary>
+        /// Set that a file has been reviewed and is approved. Moves file to the Approved file list.
+        /// </summary>
+        /// <param name="fileId">ID of file to mark reviewed.</param>
         public void approveReview(int fileId)
         {
             string query = "UPDATE Files SET `reviewed_by` = '" + this.CurrentUser + "' WHERE file_id = " + fileId;
@@ -1053,18 +1197,42 @@ namespace ModelViewer
             this.refreshFileLists();
         }
 
+        /// <summary>
+        /// Update the friendly name of a file in the database. The friendly name is used in the ANVEL export as the model name.
+        /// </summary>
+        /// <param name="fileName">Name of file to update.</param>
+        /// <param name="friendlyName">New string to use as friendly name.</param>
         public void setFileFriendlyName(string fileName, string friendlyName)
         {
             int fileId = getFileIdByFileName(fileName);
 
             if (fileId != -1)
             {
-                string query = "UPDATE Files SET friendly_name = '" + friendlyName + "' WHERE file_id = " + fileId;
-                MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-                cmd.ExecuteNonQuery();
+                try
+                {
+                    string query = "UPDATE Files SET friendly_name = '" + friendlyName + "' WHERE file_id = " + fileId;
+                    MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    if (e.Number == 1062)
+                    {
+                        MessageBox.Show("A file with this name already exists. Please try again with a different name.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    else
+                    {
+                        System.Console.WriteLine(e.Message + " \n " + e.StackTrace);
+                    }
+
+                }
             }
         }
 
+        /// <summary>
+        /// Reload the model loaded in the viewport. Loads the model again, resetting any changes.
+        /// </summary>
+        /// <param name="resetSubObjects">If true, reset the sub-object list as well.</param>
         public void resetModel(bool resetSubObjects)
         {
             if (this.CurrentModelPath != null)
@@ -1078,6 +1246,10 @@ namespace ModelViewer
             }
         }
 
+
+        /// <summary>
+        /// Reset the viewport. Removes the model from the viewport and resets associated UI elements.
+        /// </summary>
         public void resetView()
         {
             this.CurrentModelPath = "";
@@ -1094,6 +1266,10 @@ namespace ModelViewer
 
         #region SubObject Code
 
+        /// <summary>
+        /// Gets the sub-objects (parts) of the model loaded in the viewport.
+        /// </summary>
+        /// <returns>List of the names of the parts in the model.</returns>
         private List<string> getSubObjects()
         {
             List<string> subObjects = new List<string>();
@@ -1106,6 +1282,10 @@ namespace ModelViewer
             return subObjects;
         }
 
+        /// <summary>
+        /// Refresh the sub-object (parts) list. Used to update the UI parts list.
+        /// </summary>
+        /// <param name="fileId">ID of file to populate sub-object list.</param>
         private void refreshSubObjects(int fileId)
         {
             subObjectList = new List<SubObject>();
@@ -1130,24 +1310,19 @@ namespace ModelViewer
 
         }
 
-        private bool duplicateSubObject(IList<SubObject> children, string name)
-        {
-            foreach (SubObject s in children)
-            {
-                if (s.Name.Equals(name))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        /// <summary>
+        /// Highlight a part of the model given the name of the part.
+        /// </summary>
+        /// <param name="name">Name of part of model to highlight.</param>
         public void highlightObjectByName(string name)
         {
+            //reset model but don't change sub-object list (will remove any highlighting)
             resetModel(false);
 
+            //if there is a model loaded in the viewport
             if (CurrentModel != null)
             {
+                //loop through the parts until you find one with the right name, and highlight it
                 foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
                 {
                     if (gm.GetName().Equals(name))
@@ -1167,9 +1342,14 @@ namespace ModelViewer
 
         }
 
+        /// <summary>
+        /// Rename a sub-object (part) of the model.
+        /// </summary>
+        /// <param name="oldPart">Old part name</param>
+        /// <param name="newPart">New part name</param>
         public void renamePartInModel(string oldPart, string newPart)
         {
-            //PLAN B: just modify obj file
+            //modify obj file
             try
             {
                 //update object name in database - do this first, if this throws exception, duplicate part name
@@ -1179,14 +1359,18 @@ namespace ModelViewer
                 StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
 
                 string temp = "";
+                //loop through obj file
                 while ((temp = reader.ReadLine()) != null)
                 {
+                    //if we found a group tag with the old group name
                     if (temp.StartsWith("g") && temp.Contains(oldPart))
                     {
+                        //write a new group tag with the new part name
                         writer.WriteLine("g " + newPart);
                     }
                     else
                     {
+                        //else, just write the line to file
                         writer.WriteLine(temp);
                     }
                 }
@@ -1203,11 +1387,12 @@ namespace ModelViewer
                 //Delete temp file
                 File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
 
+                //refresh subobject list
                 refreshSubObjects(this.ActiveFile.FileId);
             }
             catch (MySqlException e)
             {
-                if (e.Number == 1062)
+                if (e.Number == 1062) //duplicate value
                 {
                     MessageBox.Show("A part with this name already exists. Either merge the parts or pick a new part name.", "Duplicate Part", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -1217,37 +1402,14 @@ namespace ModelViewer
                 }
 
             }
-            //PLAN A: exporter broken...
-            /*if (CurrentModel != null)
-            {
-                foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
-                {
-                    if (gm.GetName().Equals(oldPart))
-                    {
-                        gm.SetName(newPart);
-                    }
-                }
 
-                //export new model
-                ModelViewer.Exporter.ObjExporter exporter = new ModelViewer.Exporter.ObjExporter();
-                exporter.MaterialsFile = "newmodel.mtl";
-
-                ModelVisual3D mv = this.viewport.Viewport.Children[1] as ModelVisual3D;
-                ModelVisual3D mv2 = mv.Children[1] as ModelVisual3D;
-                Model3DGroup mg = mv2.Content as Model3DGroup;
-                GeometryModel3D model = mg.Children[0] as GeometryModel3D;
-
-
-                exporter.Export(model, new FileStream(@"I:\projects\ERS\Task-04\users\rsween\newmodel.obj", FileMode.CreateNew));
-
-                //File.Create(@"I:\projects\ERS\Task-04\users\rsween\newmodel.obj");
-                //exporter.ExportModel(new ModelViewer.Exporter.ObjExporter.ObjWriters(), visual.Traverse<GeometryModel3D>((m, t) => this.ExportModel(writer, m, t)));
-                
-                //update object name in database
-
-            }*/
         }
 
+        /// <summary>
+        /// Update the object in the database with the new object name.
+        /// </summary>
+        /// <param name="oldName">Old part name</param>
+        /// <param name="newName">New part name</param>
         private void renameObject(string oldName, string newName)
         {
             int fileId = getFileIdByFileName(this.CurrentModelPath);
@@ -1264,15 +1426,21 @@ namespace ModelViewer
             }
         }
 
+        /// <summary>
+        /// Merge a list of parts as a new part name
+        /// </summary>
+        /// <param name="oldParts">List of the old SubObject parts</param>
+        /// <param name="newName">New name for part</param>
         public void mergeParts(IList<SubObject> oldParts, string newName)
         {
+            //get a list of the old names
             List<string> oldPartNames = new List<string>();
             foreach (SubObject so in oldParts)
             {
                 oldPartNames.Add(so.Name);
             }
 
-            //PLAN B: just modify obj file
+            //modify obj file
             try
             {
                 //update object name in database - do this first, if this throws exception, duplicate part name
@@ -1318,14 +1486,18 @@ namespace ModelViewer
                     StreamWriter writer = new StreamWriter(new FileStream(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp", FileMode.Create));
 
                     string temp = "";
+                    //loop through the obj file
                     while ((temp = reader.ReadLine()) != null)
                     {
+                        //if we found a group tag and the group name is in the old parts list
                         if (temp.StartsWith("g") && stringContainsPart(temp, oldPartNames))
                         {
+                            //write a new group tag with the new part name
                             writer.WriteLine("g " + newName);
                         }
                         else
                         {
+                            //write the line to file
                             writer.WriteLine(temp);
                         }
                     }
@@ -1342,12 +1514,13 @@ namespace ModelViewer
                     //Delete temp file
                     File.Delete(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), this.ActiveFile.FileName) + ".temp");
 
+                    //refresh the subobjects list
                     refreshSubObjects(this.ActiveFile.FileId);
                 }
             }
             catch (MySqlException e)
             {
-                if (e.Number == 1062)
+                if (e.Number == 1062) //duplicate
                 {
                     MessageBox.Show("A part with this name already exists. Either merge the parts or pick a new part name.", "Duplicate Part", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -1359,10 +1532,18 @@ namespace ModelViewer
             }
         }
 
+        /// <summary>
+        /// Check to see if some entry in a list of strings is contained by another string.
+        /// </summary>
+        /// <param name="s">String to be compared with.</param>
+        /// <param name="p">List of strings to be checked.</param>
+        /// <returns></returns>
         private bool stringContainsPart(string s, List<string> p)
         {
+            //for each string in the list
             foreach (string part in p)
             {
+                //if the string contains the part, return true
                 if (s.Contains(part))
                 {
                     return true;
@@ -1371,6 +1552,11 @@ namespace ModelViewer
             return false;
         }
 
+        /// <summary>
+        /// Method to see if a part exists in the database. 
+        /// </summary>
+        /// <param name="partName">Part name to check for existence in the database.</param>
+        /// <returns>True if part already exists in database, false otherwise.</returns>
         private bool doesPartExist(string partName)
         {
             string query = "SELECT * FROM Objects WHERE object_name = '" + partName + "' AND file_id = " + this.ActiveFile.FileId;
@@ -1389,24 +1575,10 @@ namespace ModelViewer
             }
         }
 
-        private void mergePartsInDatabase(System.Collections.IList oldParts, string newName)
-        {
-            string query = "SELECT * FROM Object_Tag WHERE object_id = " + ((SubObject)oldParts[0]).Id;
-            for (int i = 1; i < oldParts.Count; i++)
-            {
-                query += " OR object_id = " + ((SubObject)oldParts[i]).Id;
-            }
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-            DataTable table = new DataTable();
-            adapter.Fill(table);
-
-            //populate the root file object with database entries
-            foreach (DataRow row in table.Rows)
-            {
-
-            }
-        }
-
+        /// <summary>
+        /// Get a list of all categories already in the database. Used to populate dropdown in settings panel.
+        /// </summary>
+        /// <returns></returns>
         public List<string> getCategories()
         {
             List<string> categories = new List<string>();
@@ -1425,6 +1597,11 @@ namespace ModelViewer
             return categories;
         }
 
+        /// <summary>
+        /// Update the category for a file in the database.
+        /// </summary>
+        /// <param name="fileId">ID of file to update.</param>
+        /// <param name="category">New category name.</param>
         public void setCategory(int fileId, string category)
         {
             string query = "UPDATE Files SET `category` = '" + category + "' WHERE file_id = " + fileId;
@@ -1432,6 +1609,11 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Update the shadows property for a file in the database.
+        /// </summary>
+        /// <param name="fileId">ID of file to update.</param>
+        /// <param name="category">New value, 1 for true and 0 for false.</param>
         public void setShadows(int fileId, int value)
         {
             string query = "UPDATE Files SET `shadows` = " + value + " WHERE file_id = " + fileId;
@@ -1439,6 +1621,11 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Update the zUp property for a file in the database.
+        /// </summary>
+        /// <param name="fileId">ID of file to update.</param>
+        /// <param name="category">New value, 1 for true and 0 for false.</param>
         public void setZUp(int fileId, int value)
         {
             string query = "UPDATE Files SET `zUp` = " + value + " WHERE file_id = " + fileId;
@@ -1446,21 +1633,15 @@ namespace ModelViewer
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Update the physics property for a file in the database.
+        /// </summary>
+        /// <param name="fileId">ID of file to update.</param>
+        /// <param name="category">New value, 0 for mesh and 1 for bounding box.</param>
         public void setPhysicsGeometry(int fileId, int value)
         {
             string query = "UPDATE Files SET `physicsGeometry` = " + value + " WHERE file_id = " + fileId;
             MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
-        }
-
-        public void setComments(int fileId, string value)
-        {
-            string query = "UPDATE Files SET `comment` = @value WHERE file_id = " + fileId;
-            MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection = sqlConnection;
-            cmd.CommandText = query;
-            cmd.Prepare();
-            cmd.Parameters.AddWithValue("value", value);
             cmd.ExecuteNonQuery();
         }
 
@@ -1598,6 +1779,27 @@ namespace ModelViewer
             }
         }
 
+        private int progressMax = 100;
+        public int ProgressMax
+        {
+            get { return progressMax; }
+            set
+            {
+                progressMax = value;
+                RaisePropertyChanged("ProgressMax");
+            }
+        }
+
+        public int ProgressValue
+        {
+            get { return this.percentageComplete; }
+            set
+            {
+                this.percentageComplete = value;
+                this.RaisePropertyChanged("ProgressValue");
+            }
+        }
+
         #endregion
 
         #region Menu Commands
@@ -1649,6 +1851,8 @@ namespace ModelViewer
 
             OgreMaterialExporter ome = new OgreMaterialExporter();
             ome.Export(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), Path.GetFileNameWithoutExtension(this.ActiveFile.FileName) + ".mtl"));
+
+            Process.Start(Path.GetDirectoryName(this.CurrentModelPath));
         }
 
         private async void FileExportXML()
@@ -1662,11 +1866,21 @@ namespace ModelViewer
                 {
                     path += ".xml";
                 }
-                await WriteXML(path);
+
+                refreshFileLists();
+
+                this.ProgressValue = 0;
+                this.ProgressMax = this.approvedFileList.Count + 10;
+
+                await WriteXML(path, this.approvedFileList);
+
+                this.ProgressValue = 10;
+
+                CopyAnvelFiles(path, this.approvedFileList);
             }
         }
 
-        private async Task WriteXML(string path)
+        private async Task WriteXML(string path, List<ObjectFile> objectList)
         {
             XmlWriterSettings settings = new XmlWriterSettings();
             settings.Indent = true;
@@ -1676,8 +1890,9 @@ namespace ModelViewer
             {
                 await writer.WriteStartDocumentAsync();
 
+                //7-17 Removed definitions tag and tag definitions from file as this broke ANVEL loading
                 //start definitions
-                await writer.WriteStartElementAsync(null, "definitions", null);
+                //await writer.WriteStartElementAsync(null, "definitions", null);
 
                 //start objects
                 await writer.WriteStartElementAsync(null, "objects", null);
@@ -1688,27 +1903,22 @@ namespace ModelViewer
                 await writer.WriteEndElementAsync();
                 ////end default preview
 
-                //for each file in the database
-                string query = "SELECT * FROM Files";
-                MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
-                DataTable table = new DataTable();
-                adapter.Fill(table);
 
-                //for each file in the database
-                foreach (DataRow row in table.Rows)
+                //for each file in the list
+                foreach (ObjectFile of in objectList)
                 {
                     ////start object elements
                     await writer.WriteStartElementAsync(null, "object", null);
-                    await writer.WriteAttributeStringAsync(null, "name", null, ConvertFromDBValue<string>(row["friendly_name"]));
-                    await writer.WriteAttributeStringAsync(null, "category", null, ConvertFromDBValue<string>(row["category"]));
-                    await writer.WriteAttributeStringAsync(null, "preview", null, ConvertFromDBValue<string>(row["screenshot"]));
+                    await writer.WriteAttributeStringAsync(null, "name", null, of.FriendlyName);
+                    await writer.WriteAttributeStringAsync(null, "category", null, of.Category);
+                    await writer.WriteAttributeStringAsync(null, "preview", null, of.Screenshot);
 
                     //////start representations
                     await writer.WriteStartElementAsync(null, "representations", null);
                     ////////start ogre3d
                     await writer.WriteStartElementAsync(null, "ogre3d", null);
-                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
-                    if (ConvertFromDBValue<int>(row["shadows"]).Equals(0))
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(of.FileName) + ".mesh");
+                    if (of.Shadows.Equals(0))
                     {
                         await writer.WriteAttributeStringAsync(null, "shadows", null, "off");
                     }
@@ -1716,7 +1926,7 @@ namespace ModelViewer
                     {
                         await writer.WriteAttributeStringAsync(null, "shadows", null, "on");
                     }
-                    if (ConvertFromDBValue<int>(row["zUp"]).Equals(0))
+                    if (of.ZUp.Equals(0))
                     {
                         await writer.WriteAttributeStringAsync(null, "zUp", null, "false");
                     }
@@ -1729,7 +1939,7 @@ namespace ModelViewer
 
                     ////////start vane
                     await writer.WriteStartElementAsync(null, "vane", null);
-                    await writer.WriteAttributeStringAsync(null, "mesh", null, ConvertFromDBValue<string>(row["file_name"]));
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, of.FileName);
                     await writer.WriteEndElementAsync();
                     ////////end vane
 
@@ -1740,7 +1950,7 @@ namespace ModelViewer
                     /////START PARTS          /////
                     ///////////////////////////////
 
-                    string partQuery = "SELECT * FROM Objects WHERE file_id = " + ConvertFromDBValue<int>(row["file_id"]);
+                    string partQuery = "SELECT * FROM Objects WHERE file_id = " + of.FileId;
                     MySqlDataAdapter partAdapter = new MySqlDataAdapter(partQuery, sqlConnection);
                     DataTable partTable = new DataTable();
                     partAdapter.Fill(partTable);
@@ -1791,8 +2001,8 @@ namespace ModelViewer
                     //////////start shape
                     await writer.WriteStartElementAsync(null, "shape", null);
                     await writer.WriteAttributeStringAsync(null, "type", null, "triMesh");
-                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])) + ".mesh");
-                    if (ConvertFromDBValue<int>(row["zUp"]).Equals(0))
+                    await writer.WriteAttributeStringAsync(null, "mesh", null, Path.GetFileNameWithoutExtension(of.FileName) + ".mesh");
+                    if (of.ZUp.Equals(0))
                     {
                         await writer.WriteAttributeStringAsync(null, "upAxis", null, "y");
                     }
@@ -1817,26 +2027,28 @@ namespace ModelViewer
                 //end objects
 
                 //start tag hierarchy
-                await writer.WriteStartElementAsync(null, "tags", null);
+                //await writer.WriteStartElementAsync(null, "tags", null);
 
-                foreach (TagViewModel tag in rootTagView.Children)
-                {
-                    await writer.WriteStartElementAsync(null, "tag", null);
-                    await writer.WriteAttributeStringAsync(null, "name", null, tag.Name);
-                    await writer.WriteEndElementAsync();
-                    await WriteTagXml(writer, tag);
-                }
+                //foreach (TagViewModel tag in rootTagView.Children)
+                //{
+                //    await writer.WriteStartElementAsync(null, "tag", null);
+                //    await writer.WriteAttributeStringAsync(null, "name", null, tag.Name);
+                //    await writer.WriteEndElementAsync();
+                //    await WriteTagXml(writer, tag);
+                //}
 
-                await writer.WriteEndElementAsync();
+                //await writer.WriteEndElementAsync();
                 //end tag hierarchy
 
-                await writer.WriteEndElementAsync();
+                //await writer.WriteEndElementAsync();
                 //end definitions
 
                 //flush buffer
                 await writer.FlushAsync();
 
             }
+
+
 
 
         }
@@ -1851,6 +2063,79 @@ namespace ModelViewer
                 await writer.WriteEndElementAsync();
                 await WriteTagXml(writer, tvm);
             }
+        }
+
+        private void CopyAnvelFiles(string pathToXml, List<ObjectFile> objectFiles)
+        {
+            string outputDirectory = Path.Combine(Path.GetDirectoryName(pathToXml), "BinaryAssets", "Objects", "MTT-Export");
+            Directory.CreateDirectory(outputDirectory);
+
+            int updatePercent = 90 / objectFiles.Count;
+
+            new Thread(() =>
+                {
+                    foreach (ObjectFile of in objectFiles)
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(of.FileName);
+                        string fromDir = Path.Combine(this.ModelDirectory, fileName);
+                        string toDir = Path.Combine(outputDirectory, fileName);
+                        Directory.CreateDirectory(toDir);
+
+                        //copy mesh
+                        if (File.Exists(Path.Combine(fromDir, fileName + ".mesh")))
+                        {
+                            File.Copy(Path.Combine(fromDir, fileName + ".mesh"), Path.Combine(toDir, fileName + ".mesh"));
+                        }
+                        else
+                        {
+                            OgreMeshExporter oxe = new OgreMeshExporter();
+                            oxe.ParseAndConvertFileToXml(Path.Combine(fromDir, fileName + ".obj"), Path.Combine(fromDir, fileName + ".mesh.xml"));
+
+                            if (File.Exists(Path.Combine(fromDir, fileName + ".mesh")))
+                            {
+                                File.Copy(Path.Combine(fromDir, fileName + ".mesh"), Path.Combine(toDir, fileName + ".mesh"));
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error creating mesh for " + fileName);
+                            }
+                        }
+
+                        //copy material
+                        if (File.Exists(Path.Combine(fromDir, fileName + ".material")))
+                        {
+                            File.Copy(Path.Combine(fromDir, fileName + ".material"), Path.Combine(toDir, fileName + ".material"));
+                        }
+                        else
+                        {
+                            OgreMaterialExporter ome = new OgreMaterialExporter();
+                            ome.Export(Path.Combine(Path.Combine(fromDir, fileName + ".mtl")));
+
+                            if (File.Exists(Path.Combine(fromDir, fileName + ".material")))
+                            {
+                                File.Copy(Path.Combine(fromDir, fileName + ".material"), Path.Combine(toDir, fileName + ".material"));
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error creating material for " + fileName);
+                            }
+                        }
+
+                        //copy art assets (PNG & BMP)
+                        var files = Directory.EnumerateFiles(fromDir, "*.*", SearchOption.TopDirectoryOnly);
+                        foreach (string f in files)
+                        {
+                            if (f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
+                            {
+                                File.Copy(Path.Combine(fromDir, Path.GetFileName(f)), Path.Combine(toDir, Path.GetFileName(f)));
+                            }
+                        }
+
+                        this.ProgressValue++;
+
+                    }
+                }).Start();
+
         }
 
         private void Settings()

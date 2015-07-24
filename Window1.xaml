@@ -402,7 +402,15 @@
                 <TabItem x:Name="screenshotTab" Header="Screenshot">
                     <Image x:Name="ScreenshotDisplay" Source="{Binding Path=ActiveFile.ScreenshotImageSource}" Stretch="Fill"/>
                 </TabItem>
-                <TabItem x:Name="FileCommentsTab" Header="Comments">
+                <TabItem x:Name="FileCommentsTab">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Margin="0,0,5,0">Comments</TextBlock>
+                            <Border Background="Black" BorderBrush="Black" BorderThickness="1" CornerRadius="8,8,8,8">
+                                <TextBlock Width="10" TextAlignment="Center" Text="{Binding Path=ActiveFile.Comments.Count}" Background="Black" Foreground="White"/>
+                            </Border>
+                        </StackPanel>
+                    </TabItem.Header>
                     <!--<TextBox x:Name="FileComments" Text="{Binding Path=ActiveFile.Comments}" LostKeyboardFocus="FileComments_LostKeyboardFocus" TextWrapping="Wrap" AcceptsReturn="True"/>-->
                     <Grid>
                         <Grid.RowDefinitions>
@@ -442,7 +450,7 @@
             </ModelVisual3D>
         </helix:HelixViewport3D>
 
-        <StatusBar Grid.Row="2" Grid.ColumnSpan="3">
+        <StatusBar Grid.Row="2" Grid.ColumnSpan="2">
             <StatusBarItem>
                 Current User:
             </StatusBarItem>
@@ -452,6 +460,9 @@
                 Path to Model Directory:
             </StatusBarItem>
             <StatusBarItem x:Name="model_directory" Content="{Binding ModelDirectory}"/>
+        </StatusBar>
+        <StatusBar Grid.Row="2" Grid.Column="2">
+            <ProgressBar x:Name="progressBar" Minimum="0" Maximum="{Binding ProgressMax}" Value="{Binding ProgressValue, UpdateSourceTrigger=PropertyChanged}" Width="275" Height="15"/>
         </StatusBar>
     </Grid>
 </Window>

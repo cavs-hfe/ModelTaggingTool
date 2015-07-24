@@ -116,6 +116,9 @@
     <Compile Include="Dialogs\AboutBox.Designer.cs">
       <DependentUpon>AboutBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\AnvelExportDialog.xaml.cs">
+      <DependentUpon>AnvelExportDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\AssignOtherDialog.xaml.cs">
       <DependentUpon>AssignOtherDialog.xaml</DependentUpon>
     </Compile>
@@ -133,6 +136,10 @@
     <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
       <DependentUpon>MissingFileDialog.xaml</DependentUpon>
     </Compile>
+    <Page Include="Dialogs\AnvelExportDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Dialogs\AssignOtherDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
