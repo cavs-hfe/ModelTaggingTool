@@ -36,14 +36,14 @@ namespace ModelViewer
 
             ofd.IsFolderPicker = true;
             ofd.Multiselect = false;
-            ofd.Title = ".../ERS/Task-04/tagging/tagged_objects";
+            ofd.Title = ".../cavs/hse/data1/hfe/software/tagged_objects";
 
             // Get the selected file name and display in a TextBox 
             if (ofd.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                while (!ofd.FileName.EndsWith("ERS\\Task-04\\tagging\\tagged_objects"))
+                while (!ofd.FileName.EndsWith("software\\ModelTaggingTool\\tagged_objects"))
                 {
-                    MessageBoxResult result = MessageBox.Show("Path must include the ERS tagged_objects directory (ERS\\Task-04\\tagging\\tagged_objects). Please navigate to this directory.", "Notice", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBoxResult result = MessageBox.Show("Path must include the tagged_objects directory (cavs\\hse\\data1\\hfe\\software\\ModelTaggingTool\\tagged_objects). Please navigate to this directory.", "Notice", MessageBoxButton.OK, MessageBoxImage.Information);
                     if (result == MessageBoxResult.OK)
                     {
                         if (ofd.ShowDialog() != CommonFileDialogResult.Ok)
