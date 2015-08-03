@@ -107,8 +107,10 @@ namespace ModelViewer
             this.ApplicationTitle = "3D Model Tagging Tool";
 
             //get current user and model directory from Settings
-            CurrentUser = Properties.Settings.Default.CurrentUser;
-            ModelDirectory = Properties.Settings.Default.ModelDirectoryPath;
+            //CurrentUser = Properties.Settings.Default.CurrentUser;
+            CurrentUser = Environment.UserName;
+            //ModelDirectory = Properties.Settings.Default.ModelDirectoryPath;
+            ModelDirectory = "\\\\samba-cavs.hpc.msstate.edu\\cavs\\hse\\data1\\hfe\\common\\software\\ModelTaggingTool\\tagged_objects";
 
             //check to see if the model directory path is set correctly
             if (!Directory.Exists(ModelDirectory))
@@ -1325,7 +1327,7 @@ namespace ModelViewer
                 //loop through the parts until you find one with the right name, and highlight it
                 foreach (GeometryModel3D gm in (CurrentModel as Model3DGroup).Children)
                 {
-                    if (gm.GetName().Equals(name))
+                    if (gm.GetName() != null && gm.GetName().Equals(name))
                     {
                         MaterialGroup mg = new MaterialGroup();
                         mg.Children.Add(gm.Material);
