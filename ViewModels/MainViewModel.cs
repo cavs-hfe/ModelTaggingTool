@@ -163,7 +163,7 @@ namespace ModelViewer
         private Tag PopulateRootTag(Tag parentTag)
         {
             //get everything from the Tags table where the parent Id is the Id of the current tag
-            string query = "SELECT * FROM Tags WHERE parent = " + parentTag.Id;
+            string query = "SELECT * FROM Tags WHERE parent = " + parentTag.Id + " ORDER BY tag_name ASC";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
@@ -439,7 +439,7 @@ namespace ModelViewer
             unassignedFileList = new List<ObjectFile>();
 
             //get files that are unassigned (current user == null and not reviewed)
-            string query = "SELECT * FROM Files WHERE `current_user` IS NULL AND review_ready = 0";
+            string query = "SELECT * FROM Files WHERE `current_user` IS NULL AND review_ready = 0  ORDER BY file_name ASC";
             MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
             DataTable table = new DataTable();
             adapter.Fill(table);
@@ -512,7 +512,7 @@ namespace ModelViewer
             try
             {
                 //get files
-                string query = "SELECT * FROM Files WHERE `current_user` = '" + this.CurrentUser + "';";
+                string query = "SELECT * FROM Files WHERE `current_user` = '" + this.CurrentUser + "' ORDER BY file_name ASC;";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -588,7 +588,7 @@ namespace ModelViewer
                 //get all files where the tagged_by is not the current user and link Object_Tag to Object and Object to File
                 //string query = "SELECT * FROM Files, Objects, Object_Tag WHERE Object_Tag.tagged_by != '" + this.CurrentUser + "' AND Object_Tag.object_id = Object.object_id AND Object.file_id = File.file_id";
                 //get all files ready to review
-                string query = "SELECT * FROM Files WHERE review_ready = 1 AND reviewed_by IS NULL;";
+                string query = "SELECT * FROM Files WHERE review_ready = 1 AND reviewed_by IS NULL ORDER BY file_name ASC;";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -660,7 +660,7 @@ namespace ModelViewer
             try
             {
                 //get files
-                string query = "SELECT * FROM Files WHERE reviewed_by IS NOT NULL;";
+                string query = "SELECT * FROM Files WHERE reviewed_by IS NOT NULL ORDER BY file_name ASC;";
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
                 DataTable table = new DataTable();
                 adapter.Fill(table);
@@ -802,59 +802,13 @@ namespace ModelViewer
                 {
                     File.Copy(s, Path.Combine(resourceDir, Path.GetFileName(s)));
                     List<string> assets = findAssets(s);
-                    foreach (string a in assets)
-                    {
-                        if (File.Exists(a) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a))))
-                        {
-                            File.Copy(a, Path.Combine(resourceDir, Path.GetFileName(a)));
-                        }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + a) && !File.Exists(Path.Combine(resourceDir, a)))
-                        {
-                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(resourceDir, a));
-                        }
-                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", a)) && !File.Exists(Path.Combine(resourceDir, a)))
-                        {
-                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", a), Path.Combine(resourceDir, a));
-                        }
-                        else if (!File.Exists(Path.Combine(resourceDir, a)))
-                        {
-                            //open dialog prompting for file location
-                            MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + a);
-                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(resourceDir, a)))
-                            {
-                                File.Copy(mfd.FilePath, Path.Combine(resourceDir, a));
-                            }
-                        }
-                    }
+                    CopyAssets(path, resourceDir, assets);
                 }
                 else if (File.Exists(Path.GetDirectoryName(path) + "\\" + s) && !File.Exists(Path.Combine(resourceDir, s)))
                 {
                     File.Copy(Path.GetDirectoryName(path) + "\\" + s, Path.Combine(resourceDir, s));
                     List<string> assets = findAssets(Path.Combine(resourceDir, s));
-                    foreach (string a in assets)
-                    {
-                        if (File.Exists(a) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //if the file path is explicit and is not already in the resource dir
-                        {
-                            File.Copy(a, Path.Combine(resourceDir, Path.GetFileName(a)));
-                        }
-                        else if (File.Exists(Path.GetDirectoryName(path) + "\\" + Path.GetFileName(a)) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //else if the file exists in the same directory as the mtl file and it is not already in the resource dir
-                        {
-                            File.Copy(Path.GetDirectoryName(path) + "\\" + a, Path.Combine(resourceDir, a));
-                        }
-                        else if (File.Exists(Path.Combine(Path.GetDirectoryName(path), "assets", Path.GetFileName(a))) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //else if the file is in the assets directory and is not in the resource dir
-                        {
-                            File.Copy(Path.Combine(Path.GetDirectoryName(path), "assets", Path.GetFileName(a)), Path.Combine(resourceDir, Path.GetFileName(a)));
-                        }
-                        else if (!File.Exists(Path.Combine(resourceDir, a)))
-                        {
-                            //open dialog prompting for file location
-                            MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(path) + "\\" + a);
-                            if (mfd.ShowDialog() == true && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a))))
-                            {
-                                File.Copy(mfd.FilePath, Path.Combine(resourceDir, Path.GetFileName(a)));
-                            }
-                        }
-                    }
+                    CopyAssets(path, resourceDir, assets);
                 }
                 else if (!File.Exists(Path.GetDirectoryName(path) + "\\" + s))
                 {
@@ -917,7 +871,10 @@ namespace ModelViewer
                     Match m = Regex.Match(line, @"\S+\.\S+");
                     if (m.Success)
                     {
-                        files.Add(m.Value);
+                        if (!files.Contains(m.Value))
+                        {
+                            files.Add(m.Value);
+                        }                        
                     }
                 }
             }
@@ -926,6 +883,51 @@ namespace ModelViewer
 
 
             return files;
+        }
+
+        private bool CopyAssets(String objectFilePath, String resourceDir, List<string> assets)
+        {
+            //list to keep track of other locations that files have been found in
+            List<string> fileLocations = new List<string>();
+
+            fileLocations.Add(Path.GetDirectoryName(objectFilePath)); //object directory
+            fileLocations.Add(Path.Combine(Path.GetDirectoryName(objectFilePath), "assets")); //assets dir in object directory
+
+            foreach (string a in assets)
+            {
+                if (File.Exists(a) && !File.Exists(Path.Combine(resourceDir, Path.GetFileName(a)))) //if the file path is explicit and is not already in the resource dir
+                {
+                    File.Copy(a, Path.Combine(resourceDir, Path.GetFileName(a)));
+                }
+                else if (AssetFoundInList(a, fileLocations, resourceDir))
+                {
+                    //do nothing?
+                }
+                else 
+                {
+                    //open dialog prompting for file location
+                    MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(objectFilePath) + "\\" + a);
+                    if (mfd.ShowDialog() == true)
+                    {
+                        File.Copy(mfd.FilePath, Path.Combine(resourceDir, Path.GetFileName(a)));
+                        fileLocations.Add(Path.GetDirectoryName(mfd.FilePath));
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool AssetFoundInList(string fileName, List<string> fileLocations, string resourceDir)
+        {
+            foreach (string s in fileLocations)
+            {
+                if (File.Exists(Path.Combine(s, fileName)))
+                {
+                    File.Copy(Path.Combine(s, fileName), Path.Combine(resourceDir, fileName));
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

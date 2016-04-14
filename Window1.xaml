@@ -110,7 +110,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="1*" />
+                <RowDefinition Height="3*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="1*" />
             </Grid.RowDefinitions>
@@ -331,7 +331,9 @@
                 </TreeView.ItemTemplate>
             </TreeView>
 
-            <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="2" SelectionChanged="propertiesTabControl_SelectionChanged" IsEnabled="False">
+            <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
+
+            <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="3" SelectionChanged="propertiesTabControl_SelectionChanged" IsEnabled="False">
                 <TabItem x:Name="propertiesTab" Header="File Properties">
                     <Grid ScrollViewer.CanContentScroll="True">
                         <Grid.RowDefinitions>
@@ -441,7 +443,7 @@
 
         </Grid>
 
-        <GridSplitter Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
+       
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,0,1" MouseDown="UIElement_OnMouseDown" Background="Black">
             <ModelVisual3D x:Name="root1">
