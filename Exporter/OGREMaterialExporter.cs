@@ -69,10 +69,11 @@ namespace ModelViewer.Exporter
                 writer.WriteLine("\t{");
                 writer.WriteLine("\t\tpass");
                 writer.WriteLine("\t\t{");
-                if (m.Ambient != null)
+                writer.WriteLine("\t\t\tambient 1 1 1 1");
+                /*if (m.Ambient != null)
                 {
                     writer.WriteLine("\t\t\tambient " + m.Ambient + " 1");
-                }
+                }*/
                 if (m.Diffuse != null)
                 {
                     writer.WriteLine("\t\t\tdiffuse " + m.Diffuse + " 1");

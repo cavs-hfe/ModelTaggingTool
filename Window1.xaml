@@ -71,6 +71,7 @@
         </DataTemplate>
 
     </Window.Resources>
+    
     <Grid>
 
         <Grid.RowDefinitions>
@@ -118,39 +119,112 @@
             <ToolBarTray Grid.Row="0">
                 <ToolBar>
                     <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New File">
-                        <Image Source="/Images/Add-New-128.png" Width="25" Height="25" />
+                        <Image Source="/Images/Add-New-128.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Button x:Name="RefreshModels" Click="RefreshModels_Click" ToolTip="Refresh Files">
-                        <Image Source="/Images/Command-Refresh-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/Command-Refresh-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Button x:Name="DeleteModel" Click="DeleteModel_Click" ToolTip="Delete Selected File">
-                        <Image Source="/Images/Garbage-Closed-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/Garbage-Closed-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Separator />
                     <Button x:Name="AssignMeButton" Click="AssignMeButton_Click" ToolTip="Assign to Me">
-                        <Image Source="/Images/User-Profile-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/User-Profile-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Button x:Name="AssignOtherButton" Click="AssignOtherButton_Click"  ToolTip="Assign to Other">
-                        <Image Source="/Images/User-Group-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/User-Group-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Separator />
                     <Button x:Name="TakeScreenshotButton" Click="TakeScreenshotButton_Click"  ToolTip="Take Screenshot">
-                        <Image Source="/Images/Images-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/Images-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Button x:Name="MarkReadyButton" Click="MarkReadyButton_Click" ToolTip="Ready for Review">
-                        <Image Source="/Images/Navigation-Right-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/Navigation-Right-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
                     <Separator />
                     <Button x:Name="ApproveButton" Click="ApproveButton_Click" ToolTip="Approve Tagging">
-                        <Image Source="/Images/Check-32.png" Width="25" Height="25" />
+                        <Image Source="/Images/Check-32.png" Width="25" Height="25" >
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.25" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Button>
-                    <!--<Separator />
-                    <Button x:Name="SortAscButton" Click="SortAscButton_Click"  ToolTip="Sort Ascending">
-                        <Image Source="/Images/Sort-Ascending-32.png" Width="25" Height="25" />
-                    </Button>
-                    <Button x:Name="SortDescButton" Click="SortDescButton_Click"  ToolTip="Sort Descending">
-                        <Image Source="/Images/Sort-Descending-32.png" Width="25" Height="25" />
-                    </Button>-->
                 </ToolBar>
             </ToolBarTray>
 
@@ -163,17 +237,17 @@
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Tag="SS" Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
+                                        <GridViewColumnHeader Tag="HasScreenshot"  Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Tag="Tag" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
+                                        <GridViewColumnHeader Tag="HasTags" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
                                 <GridViewColumn Width="200" DisplayMemberBinding="{Binding FileName}">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Tag="Filename" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
+                                        <GridViewColumnHeader Tag="FileName" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
                             </GridView>
@@ -181,15 +255,72 @@
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="MyFilesTab" Header="My Files">
-                    <ListView x:Name="myFilesListView" ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="myFilesListView" ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasScreenshot"  Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasTags" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="200" DisplayMemberBinding="{Binding FileName}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="FileName" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ReviewTab" Header="Review">
-                    <ListView x:Name="reviewListView" ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="reviewListView" ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasScreenshot"  Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasTags" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="200" DisplayMemberBinding="{Binding FileName}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="FileName" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ApprovedTab" Header="Approved">
-                    <ListView x:Name="approvedListView" ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged" ItemTemplate="{StaticResource fileTemplate}">
+                    <ListView x:Name="approvedListView" ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasScreenshot"  Click="GridViewColumnHeader_Click">SS</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="32" CellTemplate="{StaticResource tagTemplate}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="HasTags" Click="GridViewColumnHeader_Click">Tag</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="200" DisplayMemberBinding="{Binding FileName}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="FileName" Click="GridViewColumnHeader_Click">Filename</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
                     </ListView>
                 </TabItem>
             </TabControl>

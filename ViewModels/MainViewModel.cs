@@ -81,6 +81,8 @@ namespace ModelViewer
 
         private int percentageComplete = 0;
 
+        private List<ObjectFile> selectedItems = null;
+
         public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree)
         {
             if (viewport == null)
@@ -1861,6 +1863,13 @@ namespace ModelViewer
 
         private async void FileExportXML()
         {
+            if (this.approvedFileList.Count == 0)
+            {
+                //throw error as there must be files to export
+                MessageBox.Show("There are no items to export in the Approved list. XML export only works with approved items.", "No Approved Items", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             CommonSaveFileDialog sfd = new CommonSaveFileDialog();
             sfd.Filters.Add(new CommonFileDialogFilter("XML File", ".xml"));
             if (sfd.ShowDialog().Equals(CommonFileDialogResult.Ok))

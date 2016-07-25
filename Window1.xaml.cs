@@ -444,14 +444,25 @@ namespace ModelViewer
 
         private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
         {
-            /*GridViewColumnHeader column = (sender as GridViewColumnHeader);
+            GridViewColumnHeader column = (sender as GridViewColumnHeader);
             string sortBy = column.Tag.ToString();
 
             ListView toSort = null;
-            //if (sortBy.StartsWith("Un"))
-            //{
-                toSort = unassignedListView;
-            //}
+            switch (filesTabControl.SelectedIndex)
+            {
+                case 0: 
+                    toSort = unassignedListView;
+                    break;
+                case 1:
+                    toSort = myFilesListView;
+                    break;
+                case 2:
+                    toSort = reviewListView;
+                    break;
+                case 3:
+                    toSort = approvedListView;
+                    break;
+            }
 
             if (toSort != null)
             {
@@ -469,8 +480,7 @@ namespace ModelViewer
                 listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
                 AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
                 toSort.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
-            }*/
-
+            }
         }
 
         private void TakeScreenshotButton_Click(object sender, RoutedEventArgs e)
