@@ -45,7 +45,7 @@ namespace ModelViewer
 
         private readonly Dispatcher dispatcher;
 
-        private string currentModelPath;
+        private string currentModelPath = "";
 
         private string applicationTitle;
 
@@ -1241,7 +1241,7 @@ namespace ModelViewer
         /// <param name="resetSubObjects">If true, reset the sub-object list as well.</param>
         public void resetModel(bool resetSubObjects)
         {
-            if (this.CurrentModelPath != null)
+            if (this.CurrentModelPath != "")
             {
                 this.CurrentModel = this.Load(this.CurrentModelPath, false);
 
@@ -1852,6 +1852,12 @@ namespace ModelViewer
 
         private void FileExportANVELObject()
         {
+            if (this.currentModelPath == "")
+            {
+                MessageBox.Show("There is no model selected. Select a model from a list on the left.", "No Model Selected", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             OgreMeshExporter oxe = new OgreMeshExporter();
             oxe.ParseAndConvertFileToXml(this.CurrentModelPath, Path.Combine(Path.GetDirectoryName(this.CurrentModelPath), Path.GetFileNameWithoutExtension(this.CurrentModelPath) + ".mesh.xml"));
 
