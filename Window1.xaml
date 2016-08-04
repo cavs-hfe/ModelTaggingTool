@@ -101,6 +101,7 @@
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Zoom extents" Command="{Binding ViewZoomExtentsCommand}"/>
+                <MenuItem Header="_Bounding box" IsCheckable="True" Unchecked="MenuItem_Unchecked" Checked="MenuItem_Checked" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding HelpAboutCommand}"/>
@@ -464,7 +465,7 @@
 
             <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
 
-            <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="3" SelectionChanged="propertiesTabControl_SelectionChanged" IsEnabled="False">
+            <TabControl TabStripPlacement="Bottom" x:Name="propertiesTabControl" Grid.Row="3" IsEnabled="False">
                 <TabItem x:Name="propertiesTab" Header="File Properties">
                     <Grid ScrollViewer.CanContentScroll="True">
                         <Grid.RowDefinitions>
@@ -578,8 +579,9 @@
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,0,1" MouseDown="UIElement_OnMouseDown" Background="Black">
             <ModelVisual3D x:Name="root1">
-                <helix:DefaultLights/>
+                <helix:SunLight/>
                 <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>
+                <helix:BoundingBoxVisual3D x:Name="boundingbox1" Diameter="0.0" BoundingBox="{Binding CurrentModel.Bounds}" Fill="Yellow"/>
             </ModelVisual3D>
         </helix:HelixViewport3D>
 

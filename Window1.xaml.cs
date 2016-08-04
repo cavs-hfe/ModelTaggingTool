@@ -37,7 +37,6 @@ namespace ModelViewer
         private GridViewColumnHeader listViewSortCol = null;
         private SortAdorner listViewSortAdorner = null;
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Window1"/> class.
         /// </summary>
@@ -54,6 +53,53 @@ namespace ModelViewer
             CategoryComboBox.ItemsSource = mainViewModel.getCategories();
 
             ss.Close(TimeSpan.FromSeconds(0.3));
+        }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            mainViewModel.resetView();
+
+            unassignedListView.UnselectAll();
+            myFilesListView.UnselectAll();
+            reviewListView.UnselectAll();
+            approvedListView.UnselectAll();
+
+            if (UnassignedTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
+            }
+            else if (MyFilesTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = true;
+                MarkReadyButton.IsEnabled = true;
+                AssignMeButton.IsEnabled = false;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = true;
+            }
+            else if (ReviewTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = true;
+                TakeScreenshotButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
+            }
+            else if (ApprovedTab.IsSelected)
+            {
+                ApproveButton.IsEnabled = false;
+                TakeScreenshotButton.IsEnabled = false;
+                MarkReadyButton.IsEnabled = false;
+                AssignMeButton.IsEnabled = true;
+                AssignOtherButton.IsEnabled = true;
+                mainViewModel.IsTagTreeEnabled = false;
+            }
         }
 
         #region Object Loading and Selection
@@ -356,7 +402,14 @@ namespace ModelViewer
             }
         }
 
+        private void TakeScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            mainViewModel.FileSaveScreenshot();
+        }
+
         #endregion
+
+        #region Tag Functions
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -367,7 +420,6 @@ namespace ModelViewer
             {
                 mainViewModel.assignTagToObject(so.Id, source.Id);
             }
-
         }
 
         private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
@@ -379,68 +431,29 @@ namespace ModelViewer
             {
                 mainViewModel.unassignTagFromObject(so.Id, source.Id);
             }
-
         }
 
-        private void mnuMarkReviewed_Click(object sender, RoutedEventArgs e)
+        private void mnuDeleteTag_Click(object sender, RoutedEventArgs e)
         {
             ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
             TreeViewItem item = cm.PlacementTarget as TreeViewItem;
             TagViewModel tvm = item.Header as TagViewModel;
-            SubObject so = objectsList.SelectedItem as SubObject;
-            if (so != null && tvm != null)
+
+            if (tvm != null)
             {
-                mainViewModel.MarkTagAsReviewed(tvm.Id, so.Id);
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the tag: " + tvm.Name + "? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                {
+                    mainViewModel.deleteTag(tvm.Id);
+                    mainViewModel.refreshTagTree();
+                }
             }
 
         }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            mainViewModel.resetView();
+        #endregion
 
-            unassignedListView.UnselectAll();
-            myFilesListView.UnselectAll();
-            reviewListView.UnselectAll();
-            approvedListView.UnselectAll();
-
-            if (UnassignedTab.IsSelected)
-            {
-                ApproveButton.IsEnabled = false;
-                TakeScreenshotButton.IsEnabled = false;
-                MarkReadyButton.IsEnabled = false;
-                AssignMeButton.IsEnabled = true;
-                AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = false;
-            }
-            else if (MyFilesTab.IsSelected)
-            {
-                ApproveButton.IsEnabled = false;
-                TakeScreenshotButton.IsEnabled = true;
-                MarkReadyButton.IsEnabled = true;
-                AssignMeButton.IsEnabled = false;
-                AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = true;
-            }
-            else if (ReviewTab.IsSelected)
-            {
-                ApproveButton.IsEnabled = true;
-                TakeScreenshotButton.IsEnabled = false;
-                MarkReadyButton.IsEnabled = false;
-                AssignMeButton.IsEnabled = true;
-                AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = false;
-            }
-            else if (ApprovedTab.IsSelected)
-            {
-                ApproveButton.IsEnabled = false;
-                TakeScreenshotButton.IsEnabled = false;
-                MarkReadyButton.IsEnabled = false;
-                AssignMeButton.IsEnabled = true;
-                AssignOtherButton.IsEnabled = true;
-                mainViewModel.IsTagTreeEnabled = false;
-            }
-        }
+        #region Object Sorting Functions
 
         private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
         {
@@ -450,7 +463,7 @@ namespace ModelViewer
             ListView toSort = null;
             switch (filesTabControl.SelectedIndex)
             {
-                case 0: 
+                case 0:
                     toSort = unassignedListView;
                     break;
                 case 1:
@@ -483,15 +496,9 @@ namespace ModelViewer
             }
         }
 
-        private void TakeScreenshotButton_Click(object sender, RoutedEventArgs e)
-        {
-            mainViewModel.FileSaveScreenshot();
-        }
+        #endregion
 
-        private void propertiesTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
+        #region Properties Tab Handlers
 
         private void TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
@@ -500,7 +507,6 @@ namespace ModelViewer
             {
                 mainViewModel.setFileFriendlyName(mainViewModel.ActiveFile.FileName, tb.Text);
             }
-
         }
 
         private void CategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -509,7 +515,6 @@ namespace ModelViewer
             {
                 mainViewModel.setCategory(mainViewModel.ActiveFile.FileId, CategoryComboBox.SelectedItem.ToString());
             }
-
         }
 
         private void CategoryComboBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -546,28 +551,9 @@ namespace ModelViewer
             }
         }
 
-        private void FileComments_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            //mainViewModel.setComments(mainViewModel.ActiveFile.FileId, FileComments.Text);
-        }
+        #endregion
 
-        private void mnuDeleteTag_Click(object sender, RoutedEventArgs e)
-        {
-            ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
-            TreeViewItem item = cm.PlacementTarget as TreeViewItem;
-            TagViewModel tvm = item.Header as TagViewModel;
-
-            if (tvm != null)
-            {
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the tag: " + tvm.Name + "? All tags in the hierarchy below will be deleted as well.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                {
-                    mainViewModel.deleteTag(tvm.Id);
-                    mainViewModel.refreshTagTree();
-                }
-            }
-
-        }
+        #region Sub-part functions
 
         private void mnuEditPartName_Click(object sender, RoutedEventArgs e)
         {
@@ -597,10 +583,29 @@ namespace ModelViewer
             }
         }
 
+        #endregion
+
         private void OnListViewItemPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            
             e.Handled = true;
+        }
+
+        private void MenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
+            foreach (BoundingBoxVisual3D bb in bbEnum)
+            {
+                bb.Diameter = 0.05;
+            }
+        }
+
+        private void MenuItem_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
+            foreach (BoundingBoxVisual3D bb in bbEnum)
+            {
+                bb.Diameter = 0;
+            }
         }
     }
 

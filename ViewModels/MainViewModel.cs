@@ -2195,7 +2195,7 @@ namespace ModelViewer
 
             vRect.Height = (int)this.viewport.Viewport.ActualHeight;
 
-            vRect.Fill = Brushes.Black;
+            vRect.Fill = Brushes.Transparent;
 
             vRect.Arrange(new Rect(0, 0, vRect.Width, vRect.Height));
 
