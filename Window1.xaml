@@ -567,7 +567,7 @@
                             </ListView.ItemTemplate>
                         </ListView>
                         <TextBox x:Name="CommentTextBox" Grid.Row="1" Grid.Column="0"></TextBox>
-                        <Button x:Name="SubmitComment" Grid.Row="1" Grid.Column="1" Width="75">Add</Button>
+                        <Button x:Name="SubmitComment" Grid.Row="1" Grid.Column="1" Width="75" Click="SubmitComment_Click">Add</Button>
 
                     </Grid>
                 </TabItem>

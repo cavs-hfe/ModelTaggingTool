@@ -55,7 +55,14 @@ namespace ModelViewer
 
         private void btnDialogOk_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = true;
+            if (File.Exists(path))
+            {
+                this.DialogResult = true;
+            }
+            else
+            {
+                MessageBox.Show("Error: Path not valid. Please enter a valid path and try again.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public string FilePath

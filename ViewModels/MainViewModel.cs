@@ -723,6 +723,65 @@ namespace ModelViewer
             this.RaisePropertyChanged("ApprovedFiles");
         }
 
+        public void refreshFile()
+        {
+            //get files
+            string query = "SELECT * FROM Files WHERE file_id = " + activeFile.FileId + ";";
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, sqlConnection);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
+
+            //populate the root file object with database entries
+            foreach (DataRow row in table.Rows)
+            {
+                string query2 = "SELECT tag_id FROM `Files`, `Objects`, `Object_Tag` WHERE Files.file_id = " + Convert.ToInt32(row["file_id"]) + " AND Object_Tag.object_id = Objects.object_id AND Objects.file_id = Files.file_id";
+                adapter = new MySqlDataAdapter(query2, sqlConnection);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+
+                string query3 = "SELECT * FROM Comments WHERE file_id = " + Convert.ToInt32(row["file_id"]);
+                adapter = new MySqlDataAdapter(query3, sqlConnection);
+                DataTable commentTable = new DataTable();
+                adapter.Fill(commentTable);
+
+                List<Comment> comments = new List<Comment>();
+
+                foreach (DataRow comment in commentTable.Rows)
+                {
+                    Comment c = new Comment();
+                    c.Id = ConvertFromDBValue<int>(comment["comment_id"]);
+                    c.User = ConvertFromDBValue<string>(comment["user"]);
+                    c.CommentText = ConvertFromDBValue<string>(comment["comment"]);
+                    c.Timestamp = ConvertFromDBValue<DateTime>(comment["timestamp"]);
+                    if (colorUserMapping.ContainsKey(c.User))
+                    {
+                        c.Color = colorUserMapping[c.User];
+                    }
+                    else
+                    {
+                        colorUserMapping.Add(c.User, commentColors.Dequeue());
+                        c.Color = colorUserMapping[c.User];
+                    }
+                    comments.Add(c);
+                }
+
+                ObjectFile of = null;
+
+                if (dt.Rows.Count > 0)
+                {
+                    of = new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), true, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"]));
+                    of.Comments = comments;
+                }
+                else
+                {
+                    of = new ObjectFile(Convert.ToInt32(row["file_id"]), ConvertFromDBValue<string>(row["file_name"]), ConvertFromDBValue<string>(row["friendly_name"]), ConvertFromDBValue<string>(row["screenshot"]), Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(ConvertFromDBValue<string>(row["file_name"])), ConvertFromDBValue<string>(row["screenshot"])), false, ConvertFromDBValue<string>(row["uploaded_by"]), ConvertFromDBValue<string>(row["current_user"]), ConvertFromDBValue<string>(row["reviewed_by"]), ConvertFromDBValue<string>(row["category"]), ConvertFromDBValue<int>(row["shadows"]), ConvertFromDBValue<int>(row["zUp"]), ConvertFromDBValue<int>(row["physicsGeometry"]));
+                    of.Comments = comments;
+                }
+
+                LoadModel(of);
+            }
+        }
+
         #endregion
 
         #region Add Model
@@ -876,7 +935,7 @@ namespace ModelViewer
                         if (!files.Contains(m.Value))
                         {
                             files.Add(m.Value);
-                        }                        
+                        }
                     }
                 }
             }
@@ -901,11 +960,11 @@ namespace ModelViewer
                 {
                     File.Copy(a, Path.Combine(resourceDir, Path.GetFileName(a)));
                 }
-                else if (AssetFoundInList(a, fileLocations, resourceDir))
+                else if (AssetFoundInList(Path.GetFileName(a), fileLocations, resourceDir))
                 {
                     //do nothing?
                 }
-                else 
+                else
                 {
                     //open dialog prompting for file location
                     MissingFileDialog mfd = new MissingFileDialog("Cannot find file: " + a + ". Please navigate to file.", Path.GetDirectoryName(objectFilePath) + "\\" + a);
@@ -2367,6 +2426,13 @@ namespace ModelViewer
                 MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        public void addComment(string comment)
+        {
+            string query = "INSERT INTO  `cavs_ivp04`.`Comments` (`user` , `file_id` , `comment` , `timestamp`) VALUES ('" + currentUser + "',  '" + getFileIdByFileName(currentModelPath) + "',  '" + comment + "', CURRENT_TIMESTAMP);";
+            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
+            cmd.ExecuteNonQuery();
         }
 
         public T ConvertFromDBValue<T>(object obj)

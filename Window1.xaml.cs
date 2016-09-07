@@ -607,6 +607,14 @@ namespace ModelViewer
                 bb.Diameter = 0;
             }
         }
+
+        private void SubmitComment_Click(object sender, RoutedEventArgs e)
+        {
+            mainViewModel.addComment(CommentTextBox.Text);
+            CommentTextBox.Text = "";
+            mainViewModel.refreshFile();
+            propertiesTabControl.SelectedIndex = 2;
+        }
     }
 
     public class SortAdorner : Adorner
