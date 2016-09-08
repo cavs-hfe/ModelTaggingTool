@@ -595,7 +595,7 @@ namespace ModelViewer
             IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
             foreach (BoundingBoxVisual3D bb in bbEnum)
             {
-                bb.Diameter = 0.05;
+                bb.Diameter = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
             }
         }
 
@@ -614,6 +614,42 @@ namespace ModelViewer
             CommentTextBox.Text = "";
             mainViewModel.refreshFile();
             propertiesTabControl.SelectedIndex = 2;
+        }
+
+        private void MenuItemOrigin_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
+            foreach (SphereVisual3D origin in bbEnum)
+            {
+                origin.Radius = 0;
+            }
+        }
+
+        private void MenuItemOrigin_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
+            foreach (SphereVisual3D origin in bbEnum)
+            {
+                origin.Radius = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
+            }
+        }
+
+        private void MenuItemAxes_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
+            foreach (CoordinateSystemVisual3D origin in bbEnum)
+            {
+                origin.ArrowLengths = 0;
+            }
+        }
+
+        private void MenuItemAxes_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
+            foreach (CoordinateSystemVisual3D origin in bbEnum)
+            {
+                origin.ArrowLengths = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.2;
+            }
         }
     }
 

@@ -102,6 +102,8 @@
             <MenuItem Header="_View">
                 <MenuItem Header="_Zoom extents" Command="{Binding ViewZoomExtentsCommand}"/>
                 <MenuItem Header="_Bounding box" IsCheckable="True" Unchecked="MenuItem_Unchecked" Checked="MenuItem_Checked" />
+                <MenuItem Header="_Origin" IsCheckable="True" Unchecked="MenuItemOrigin_Unchecked"  Checked="MenuItemOrigin_Checked" />
+                <MenuItem Header="_Coordinate Axes" IsCheckable="True" Unchecked="MenuItemAxes_Unchecked"  Checked="MenuItemAxes_Checked" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding HelpAboutCommand}"/>
@@ -575,13 +577,15 @@
 
         </Grid>
 
-       
+
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,0,1" MouseDown="UIElement_OnMouseDown" Background="Black">
             <ModelVisual3D x:Name="root1">
                 <helix:SunLight/>
                 <ModelVisual3D x:Name="model1" Content="{Binding CurrentModel}"/>
                 <helix:BoundingBoxVisual3D x:Name="boundingbox1" Diameter="0.0" BoundingBox="{Binding CurrentModel.Bounds}" Fill="Yellow"/>
+                <helix:SphereVisual3D x:Name="origin" Center="0,0,0" Radius="0" Fill="White" />
+                <helix:CoordinateSystemVisual3D ArrowLengths="0" />
             </ModelVisual3D>
         </helix:HelixViewport3D>
 
