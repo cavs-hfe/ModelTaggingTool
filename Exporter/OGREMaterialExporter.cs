@@ -74,10 +74,11 @@ namespace ModelViewer.Exporter
                 {
                     writer.WriteLine("\t\t\tambient " + m.Ambient + " 1");
                 }*/
-                if (m.Diffuse != null)
+                writer.WriteLine("\t\t\tdiffuse 1 1 1 1");
+                /*if (m.Diffuse != null)
                 {
                     writer.WriteLine("\t\t\tdiffuse " + m.Diffuse + " 1");
-                }
+                }*/
                 if (m.Specular != null)
                 {
                     writer.WriteLine("\t\t\tspecular " + m.Specular + " 2");

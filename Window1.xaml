@@ -69,11 +69,9 @@
                 </Image.Style>
             </Image>
         </DataTemplate>
-
     </Window.Resources>
-    
-    <Grid>
 
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -87,11 +85,10 @@
 
         <Menu Grid.Row="0" Grid.ColumnSpan="3">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open..." Command="{Binding FileOpenCommand}"/>
-                <!--<MenuItem Header="_Export..." Command="{Binding FileExportCommand}"/>-->
-                <MenuItem Header="Export Object to ANVEL" Command="{Binding FileExportANVELCommand}" />
+                <!--<MenuItem Header="Export Object to ANVEL" Command="{Binding FileExportANVELCommand}" />-->
+                <MenuItem Header="Export Object to ANVEL" Click="MenuItemExportToANVEL_Click" />
                 <MenuItem Header="Export XML" Command="{Binding FileExportXMLCommand}" />
-                <!--<MenuItem Header="Save Screenshot" Command="{Binding FileSaveScreenshotCommand}" />-->
+                <MenuItem Header="Export VANE Objects" Command="{Binding FileExportVANECommand}" />
                 <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding FileExitCommand}"/>
             </MenuItem>
@@ -101,7 +98,7 @@
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Zoom extents" Command="{Binding ViewZoomExtentsCommand}"/>
-                <MenuItem Header="_Bounding box" IsCheckable="True" Unchecked="MenuItem_Unchecked" Checked="MenuItem_Checked" />
+                <MenuItem Header="_Bounding box" IsCheckable="True" Unchecked="MenuItemViewBoundingBox_Unchecked" Checked="MenuItemViewBoundingBox_Checked" />
                 <MenuItem Header="_Origin" IsCheckable="True" Unchecked="MenuItemOrigin_Unchecked"  Checked="MenuItemOrigin_Checked" />
                 <MenuItem Header="_Coordinate Axes" IsCheckable="True" Unchecked="MenuItemAxes_Unchecked"  Checked="MenuItemAxes_Checked" />
             </MenuItem>
@@ -118,7 +115,6 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="1*" />
             </Grid.RowDefinitions>
-
             <ToolBarTray Grid.Row="0">
                 <ToolBar>
                     <Button x:Name="NewModelButton" Click="NewModelButton_Click" ToolTip="Add New File">
@@ -235,7 +231,7 @@
 
             <TabControl x:Name="filesTabControl" Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
                 <TabItem x:Name="UnassignedTab" Header="Unassigned">
-                    <ListView x:Name="unassignedListView" ItemsSource="{Binding UnassignedFiles}" SelectionChanged="ListView_SelectionChanged">
+                    <ListView x:Name="unassignedListView" ItemsSource="{Binding UnassignedFiles}" SelectionChanged="FileListView_SelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
@@ -258,7 +254,7 @@
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="MyFilesTab" Header="My Files">
-                    <ListView x:Name="myFilesListView" ItemsSource="{Binding MyFiles}" SelectionChanged="ListView_SelectionChanged">
+                    <ListView x:Name="myFilesListView" ItemsSource="{Binding MyFiles}" SelectionChanged="FileListView_SelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
@@ -281,7 +277,7 @@
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ReviewTab" Header="Review">
-                    <ListView x:Name="reviewListView" ItemsSource="{Binding ReviewFiles}" SelectionChanged="ListView_SelectionChanged">
+                    <ListView x:Name="reviewListView" ItemsSource="{Binding ReviewFiles}" SelectionChanged="FileListView_SelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
@@ -304,7 +300,7 @@
                     </ListView>
                 </TabItem>
                 <TabItem x:Name="ApprovedTab" Header="Approved">
-                    <ListView x:Name="approvedListView" ItemsSource="{Binding ApprovedFiles}" SelectionChanged="ListView_SelectionChanged">
+                    <ListView x:Name="approvedListView" ItemsSource="{Binding ApprovedFiles}" SelectionChanged="FileListView_SelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="32" CellTemplate="{StaticResource screenshotTemplate}">
@@ -327,23 +323,6 @@
                     </ListView>
                 </TabItem>
             </TabControl>
-
-            <!--<TreeView x:Name="fileTree" ItemsSource="{Binding ObjectFiles}">
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <EventSetter Event="MouseDoubleClick" Handler="OnItemMouseDoubleClick" />
-                                <Setter Property="IsExpanded" Value="True" />
-                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                        <TreeView.ItemTemplate>
-                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding FileName}" />
-                                </StackPanel>
-                            </HierarchicalDataTemplate>
-                        </TreeView.ItemTemplate>
-                    </TreeView>-->
 
             <GridSplitter Grid.Row="2" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5" ShowsPreview="True" ResizeDirection="Rows" />
 
@@ -384,25 +363,6 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
-            <!--<TreeView Grid.Row="2" x:Name="objectsTree" ItemsSource="{Binding SubObjects}">
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <EventSetter Event="Selected" Handler="OnSubObjectItemSelected" />
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                    </Style>
-                </TreeView.ItemContainerStyle>
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Name}" />
-                        </StackPanel>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-            </TreeView>-->
-
-
         </Grid>
 
         <GridSplitter Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5" ShowsPreview="True" />
@@ -431,7 +391,7 @@
             <TreeView x:Name="tagTree" ItemsSource="{Binding FirstGeneration}" Grid.Row="1">
                 <TreeView.Resources>
                     <ContextMenu x:Key="ContextMnu">
-                        <MenuItem x:Name="mnuDeleteTag" Header="Delete Tag" Command="{Binding MarkTagAsReviewedCommand}" Click="mnuDeleteTag_Click"/>
+                        <MenuItem x:Name="mnuDeleteTag" Header="Delete Tag" Click="DeleteTagMenuItem_Click"/>
                     </ContextMenu>
                 </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
@@ -445,21 +405,12 @@
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                         <Setter Property="IsEnabled" Value="{Binding IsEnabled, Mode=OneWay}" />
                         <Setter Property="ContextMenu" Value="{StaticResource ContextMnu}" />
-                        <!--<Style.Triggers>
-                            <DataTrigger Binding="{Binding IsReviewed}" Value="False">
-                                <Setter Property="FontWeight" Value="Bold" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsReviewed}" Value="True">
-                                <Setter Property="FontWeight" Value="Normal" />
-                            </DataTrigger>
-                        </Style.Triggers>-->
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
-                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked, Mode=OneWay}" VerticalAlignment="Center" Content="{Binding Name}" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
-                            <!--TextBlock Text="{Binding Name}" />-->
+                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked, Mode=OneWay}" VerticalAlignment="Center" Content="{Binding Name}" Checked="TagCheckBox_Checked" Unchecked="TagCheckBox_Unchecked" />
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
@@ -496,7 +447,7 @@
 
                         <!-- Friendly Name -->
                         <TextBlock Grid.Row="2" Grid.Column="0">Friendly Name:</TextBlock>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ActiveFile.FriendlyName}" LostKeyboardFocus="TextBox_LostKeyboardFocus"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ActiveFile.FriendlyName}" LostKeyboardFocus="FriendlyNameTextBox_LostKeyboardFocus"/>
 
                         <!-- Category -->
                         <TextBlock Grid.Row="3" Grid.Column="0">Category:</TextBlock>
@@ -547,7 +498,6 @@
                             </Border>
                         </StackPanel>
                     </TabItem.Header>
-                    <!--<TextBox x:Name="FileComments" Text="{Binding Path=ActiveFile.Comments}" LostKeyboardFocus="FileComments_LostKeyboardFocus" TextWrapping="Wrap" AcceptsReturn="True"/>-->
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="1*" />
@@ -570,14 +520,10 @@
                         </ListView>
                         <TextBox x:Name="CommentTextBox" Grid.Row="1" Grid.Column="0"></TextBox>
                         <Button x:Name="SubmitComment" Grid.Row="1" Grid.Column="1" Width="75" Click="SubmitComment_Click">Add</Button>
-
                     </Grid>
                 </TabItem>
             </TabControl>
-
         </Grid>
-
-
 
         <helix:HelixViewport3D Grid.Row="1" Grid.Column="1" x:Name="view1" CameraRotationMode="Trackball" ModelUpDirection="0,0,1" MouseDown="UIElement_OnMouseDown" Background="Black">
             <ModelVisual3D x:Name="root1">

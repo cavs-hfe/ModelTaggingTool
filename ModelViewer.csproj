@@ -131,6 +131,7 @@
     <Compile Include="Exporter\ObjExporter.cs" />
     <Compile Include="Exporter\OgreMaterialExporter.cs" />
     <Compile Include="Exporter\OgreMeshExporter.cs" />
+    <Compile Include="Exporter\VaneExporter.cs" />
     <Compile Include="Importer\CAVS_ModelImporter.cs" />
     <Compile Include="Importer\CAVS_ObjReader.cs" />
     <Compile Include="Dialogs\MissingFileDialog.xaml.cs">
@@ -171,8 +172,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DelegateCommand.cs" />
-    <Compile Include="FileDialogService.cs" />
-    <Compile Include="IFileDialogService.cs" />
     <Compile Include="Models\Comment.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="Dialogs\NewTagDialog.xaml.cs">
@@ -181,7 +180,6 @@
     <Compile Include="Models\ObjectFile.cs" />
     <Compile Include="ViewModels\ObjectFileViewModel.cs" />
     <Compile Include="Observable.cs" />
-    <Compile Include="Settings.cs" />
     <Compile Include="Models\SubObject.cs" />
     <Compile Include="ViewModels\SubObjectViewModel.cs" />
     <Compile Include="ViewModels\TagViewModel.cs" />

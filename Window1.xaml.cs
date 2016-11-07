@@ -1,9 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="Window1.xaml.cs" company="Helix Toolkit">
-//   Copyright (c) 2014 Helix Toolkit contributors
-// </copyright>
 // <summary>
-//   Interaction logic for Window1.
+//   Interaction logic for Window1. Modified from Helix toolkit Model Viewer example.
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -24,34 +21,36 @@ using System.ComponentModel;
 
 namespace ModelViewer
 {
-    /// <summary>
-    /// Interaction logic for Window1.
-    /// </summary>
     public partial class Window1
     {
+        //used for drag-and-drop in tag tree
         Point startPoint;
         bool isDragging = false;
 
+        //reference to view model
         MainViewModel mainViewModel;
 
+        //used in sorting file list views
         private GridViewColumnHeader listViewSortCol = null;
         private SortAdorner listViewSortAdorner = null;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Window1"/> class.
-        /// </summary>
         public Window1()
         {
+            //display splash screen
             SplashScreen ss = new SplashScreen("/Images/SplashScreen.png");
             ss.Show(false);
 
+            //initialize window components
             this.InitializeComponent();
 
-            mainViewModel = new MainViewModel(new FileDialogService(), view1, tagTree);
+            //create new view model and set this window's data context to it
+            mainViewModel = new MainViewModel(view1, tagTree);
             this.DataContext = mainViewModel;
 
+            //get the list of categories from the viewmodel and populate the combo box
             CategoryComboBox.ItemsSource = mainViewModel.getCategories();
 
+            //close the splash screen now that everything's loaded
             ss.Close(TimeSpan.FromSeconds(0.3));
         }
 
@@ -102,17 +101,86 @@ namespace ModelViewer
             }
         }
 
+        #region Menu Handlers
+
+        private void MenuItemExportToANVEL_Click(object sender, RoutedEventArgs e)
+        {
+            if (filesTabControl.SelectedIndex != 3)
+            {
+                //you can only export from approved
+                MessageBox.Show("You can only export objects from the approved tab. Select an object or objects from the approved tab and try again.", "Invalid Export", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            ObjectFile[] ofa = new ObjectFile[approvedListView.SelectedItems.Count];
+            approvedListView.SelectedItems.CopyTo(ofa, 0);
+
+            mainViewModel.FileExportANVELObject(ofa);
+        }
+
+        private void MenuItemViewBoundingBox_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
+            foreach (BoundingBoxVisual3D bb in bbEnum)
+            {
+                bb.Diameter = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
+            }
+        }
+
+        private void MenuItemViewBoundingBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
+            foreach (BoundingBoxVisual3D bb in bbEnum)
+            {
+                bb.Diameter = 0;
+            }
+        }
+
+        private void MenuItemOrigin_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
+            foreach (SphereVisual3D origin in bbEnum)
+            {
+                origin.Radius = 0;
+            }
+        }
+
+        private void MenuItemOrigin_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
+            foreach (SphereVisual3D origin in bbEnum)
+            {
+                origin.Radius = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
+            }
+        }
+
+        private void MenuItemAxes_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
+            foreach (CoordinateSystemVisual3D origin in bbEnum)
+            {
+                origin.ArrowLengths = 0;
+            }
+        }
+
+        private void MenuItemAxes_Checked(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
+            foreach (CoordinateSystemVisual3D origin in bbEnum)
+            {
+                origin.ArrowLengths = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.2;
+            }
+        }
+
+        #endregion
+
         #region Object Loading and Selection
 
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void FileListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ListView lv = e.OriginalSource as ListView;
 
-            if (lv.SelectedItems.Count > 1)
-            {
-
-            }
-            else
+            if (lv.SelectedItems.Count == 1)
             {
                 ObjectFile of = lv.SelectedItem as ObjectFile;
 
@@ -404,14 +472,14 @@ namespace ModelViewer
 
         private void TakeScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
-            mainViewModel.FileSaveScreenshot();
+            mainViewModel.SaveScreenshot();
         }
 
         #endregion
 
         #region Tag Functions
 
-        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        private void TagCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
             source.IsChecked = true;
@@ -422,7 +490,7 @@ namespace ModelViewer
             }
         }
 
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        private void TagCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             TagViewModel source = ((CheckBox)sender).DataContext as TagViewModel;
             source.IsChecked = false;
@@ -433,7 +501,7 @@ namespace ModelViewer
             }
         }
 
-        private void mnuDeleteTag_Click(object sender, RoutedEventArgs e)
+        private void DeleteTagMenuItem_Click(object sender, RoutedEventArgs e)
         {
             ContextMenu cm = ((MenuItem)sender).Parent as ContextMenu;
             TreeViewItem item = cm.PlacementTarget as TreeViewItem;
@@ -448,13 +516,13 @@ namespace ModelViewer
                     mainViewModel.refreshTagTree();
                 }
             }
-
         }
 
         #endregion
 
         #region Object Sorting Functions
 
+        //used to sort file list by column
         private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
         {
             GridViewColumnHeader column = (sender as GridViewColumnHeader);
@@ -500,7 +568,7 @@ namespace ModelViewer
 
         #region Properties Tab Handlers
 
-        private void TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        private void FriendlyNameTextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             TextBox tb = sender as TextBox;
             if (tb != null)
@@ -551,6 +619,14 @@ namespace ModelViewer
             }
         }
 
+        private void SubmitComment_Click(object sender, RoutedEventArgs e)
+        {
+            mainViewModel.addComment(CommentTextBox.Text);
+            CommentTextBox.Text = "";
+            mainViewModel.refreshFile();
+            propertiesTabControl.SelectedIndex = 2;
+        }
+
         #endregion
 
         #region Sub-part functions
@@ -589,70 +665,9 @@ namespace ModelViewer
         {
             e.Handled = true;
         }
-
-        private void MenuItem_Checked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
-            foreach (BoundingBoxVisual3D bb in bbEnum)
-            {
-                bb.Diameter = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
-            }
-        }
-
-        private void MenuItem_Unchecked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<BoundingBoxVisual3D> bbEnum = root1.Children.OfType<BoundingBoxVisual3D>();
-            foreach (BoundingBoxVisual3D bb in bbEnum)
-            {
-                bb.Diameter = 0;
-            }
-        }
-
-        private void SubmitComment_Click(object sender, RoutedEventArgs e)
-        {
-            mainViewModel.addComment(CommentTextBox.Text);
-            CommentTextBox.Text = "";
-            mainViewModel.refreshFile();
-            propertiesTabControl.SelectedIndex = 2;
-        }
-
-        private void MenuItemOrigin_Unchecked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
-            foreach (SphereVisual3D origin in bbEnum)
-            {
-                origin.Radius = 0;
-            }
-        }
-
-        private void MenuItemOrigin_Checked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<SphereVisual3D> bbEnum = root1.Children.OfType<SphereVisual3D>();
-            foreach (SphereVisual3D origin in bbEnum)
-            {
-                origin.Radius = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.01;
-            }
-        }
-
-        private void MenuItemAxes_Unchecked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
-            foreach (CoordinateSystemVisual3D origin in bbEnum)
-            {
-                origin.ArrowLengths = 0;
-            }
-        }
-
-        private void MenuItemAxes_Checked(object sender, RoutedEventArgs e)
-        {
-            IEnumerable<CoordinateSystemVisual3D> bbEnum = root1.Children.OfType<CoordinateSystemVisual3D>();
-            foreach (CoordinateSystemVisual3D origin in bbEnum)
-            {
-                origin.ArrowLengths = Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.X), Math.Max(Math.Abs(mainViewModel.CurrentModel.Bounds.Y), Math.Abs(mainViewModel.CurrentModel.Bounds.Z))) * 0.2;
-            }
-        }
     }
 
+    //class to draw the little up and down triangles on the sorted columns in the file list view
     public class SortAdorner : Adorner
     {
         private static Geometry ascGeometry =
@@ -691,6 +706,4 @@ namespace ModelViewer
             drawingContext.Pop();
         }
     }
-
-
 }

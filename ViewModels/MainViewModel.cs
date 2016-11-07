@@ -31,6 +31,7 @@ namespace ModelViewer
     using ModelViewer.Models;
     using ModelViewer.Exporter;
     using System.Diagnostics;
+    using Microsoft.Win32;
 
 
     public class MainViewModel : Observable
@@ -38,8 +39,6 @@ namespace ModelViewer
         private const string OpenFileFilter = "3D model files (*.3ds;*.obj;*.lwo;*.stl)|*.3ds;*.obj;*.objz;*.lwo;*.stl";
 
         private const string TitleFormatString = "3D Model Tagging Tool - {0}";
-
-        private readonly IFileDialogService fileDialogService;
 
         private readonly IHelixViewport3D viewport;
 
@@ -81,9 +80,7 @@ namespace ModelViewer
 
         private int percentageComplete = 0;
 
-        private List<ObjectFile> selectedItems = null;
-
-        public MainViewModel(IFileDialogService fds, HelixViewport3D viewport, TreeView tagTree)
+        public MainViewModel(HelixViewport3D viewport, TreeView tagTree)
         {
             if (viewport == null)
             {
@@ -92,19 +89,15 @@ namespace ModelViewer
             this.tagTree = tagTree;
             this.dispatcher = Dispatcher.CurrentDispatcher;
             this.Expansion = 1;
-            this.fileDialogService = fds;
             this.viewport = viewport;
-            this.FileOpenCommand = new DelegateCommand(this.FileOpen);
-            this.FileExportCommand = new DelegateCommand(this.FileExport);
             this.FileExportANVELCommand = new DelegateCommand(this.FileExportANVELObject);
             this.FileExportXMLCommand = new DelegateCommand(this.FileExportXML);
-            this.FileSaveScreenshotCommand = new DelegateCommand(this.FileSaveScreenshot);
+            this.FileExportVANECommand = new DelegateCommand(this.FileExportVANE);
             this.FileExitCommand = new DelegateCommand(FileExit);
             this.ViewZoomExtentsCommand = new DelegateCommand(this.ViewZoomExtents);
             this.EditSettingsCommand = new DelegateCommand(this.Settings);
             this.HelpAboutCommand = new DelegateCommand(this.HelpAbout);
             this.RenameObjectCommand = new DelegateCommand(this.RenameObject);
-            this.MarkTagAsReviewedCommand = new DelegateCommand(this.MarkTagAsReviewed);
             this.CheckDataValidityCommand = new DelegateCommand(this.checkValidityOfDatabase);
             this.ApplicationTitle = "3D Model Tagging Tool";
 
@@ -342,78 +335,6 @@ namespace ModelViewer
             }
 
         }
-
-        #region Review Tags
-
-        [Obsolete("Deprecated in favor of whole file review.")]
-        /// <summary>
-        /// Mark a tag as reviewed.
-        /// </summary>
-        /// <param name="tagId">ID of tag being reviewed.</param>
-        /// <param name="objectId">ID of object that tag is assigned to.</param>
-        public void MarkTagAsReviewed(int tagId, int objectId)
-        {
-            //if the current user is allowed to review the tag
-            if (verifyTagReview(tagId, objectId))
-            {
-                //update the database
-                reviewTag(tagId, objectId);
-
-                //update the tag tree (tag should no longer be bolded)
-                showAssignedTags(objectId);
-            }
-            else //otherwise show error
-            {
-                MessageBox.Show("You cannot review a tag that you assigned.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [Obsolete("Deprectated as part of tag review. Process replaced with whole file review.")]
-        /// <summary>
-        /// Verify that the current user is allowed to mark a file as reviewed. Basically check that the current user is not the same user who assigned the tag to the object.
-        /// </summary>
-        /// <param name="tagId">ID of tag being reviewed.</param>
-        /// <param name="objectId">ID of object being reviewed.</param>
-        /// <returns>true if user should be allowed to mark as reviewed, false otherwise.</returns>
-        private bool verifyTagReview(int tagId, int objectId)
-        {
-            //get the user who assigned the tag to the object
-            string query = "SELECT tagged_by FROM Object_Tag WHERE object_id = " + objectId + " AND tag_id = " + tagId;
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            MySqlDataReader reader = cmd.ExecuteReader();
-
-            //deny by default
-            bool allowed = false;
-            //if the tagging is found
-            if (reader.Read())
-            {
-                //get the user who tagged the object
-                string taggedBy = (string)reader["tagged_by"];
-                //if the tagger is not the current user, set the return variable to true
-                if (!taggedBy.Equals(this.CurrentUser))
-                {
-                    allowed = true;
-                }
-            }
-            reader.Close();
-            return allowed;
-
-        }
-
-        [Obsolete("Deprectated as part of tag review. Process replaced with whole file review.")]
-        /// <summary>
-        /// Update database that tag has been reviewed.
-        /// </summary>
-        /// <param name="tagId">ID of tag being reviewed.</param>
-        /// <param name="objectId">ID of object being reviewed.</param>
-        private void reviewTag(int tagId, int objectId)
-        {
-            string query = "UPDATE Object_Tag SET reviewed = 1, reviewed_by = '" + CurrentUser + "' WHERE object_id = " + objectId + " AND tag_id = " + tagId;
-            MySqlCommand cmd = new MySqlCommand(query, sqlConnection);
-            cmd.ExecuteNonQuery();
-        }
-
-        #endregion
 
         #endregion
 
@@ -1871,13 +1792,11 @@ namespace ModelViewer
 
         public ICommand FileOpenCommand { get; set; }
 
-        public ICommand FileExportCommand { get; set; }
-
         public ICommand FileExportXMLCommand { get; set; }
 
-        public ICommand FileExportANVELCommand { get; set; }
+        public ICommand FileExportVANECommand { get; set; }
 
-        public ICommand FileSaveScreenshotCommand { get; set; }
+        public ICommand FileExportANVELCommand { get; set; }
 
         public ICommand FileExitCommand { get; set; }
 
@@ -1889,24 +1808,11 @@ namespace ModelViewer
 
         public ICommand RenameObjectCommand { get; set; }
 
-        public ICommand MarkTagAsReviewedCommand { get; set; }
-
         public ICommand CheckDataValidityCommand { get; set; }
 
         private static void FileExit()
         {
             Application.Current.Shutdown();
-        }
-
-        private void FileExport()
-        {
-            var path = this.fileDialogService.SaveFileDialog(null, null, Exporters.Filter, ".png");
-            if (path == null)
-            {
-                return;
-            }
-
-            this.viewport.Export(path);
         }
 
         private void FileExportANVELObject()
@@ -1923,7 +1829,21 @@ namespace ModelViewer
             OgreMaterialExporter ome = new OgreMaterialExporter();
             ome.Export(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(this.ActiveFile.FileName), Path.GetFileNameWithoutExtension(this.ActiveFile.FileName) + ".mtl"));
 
-            Process.Start(Path.GetDirectoryName(this.CurrentModelPath));
+            Process.Start(Path.GetDirectoryName(this.CurrentModelPath)); 
+        }
+
+        internal void FileExportANVELObject(ObjectFile[] list)
+        {
+            foreach (ObjectFile file in list)
+            {
+                string modelPath = Path.Combine(modelDirectory, Path.GetFileNameWithoutExtension(file.FileName), file.FileName);
+
+                OgreMeshExporter oxe = new OgreMeshExporter();
+                oxe.ParseAndConvertFileToXml(modelPath, Path.Combine(Path.GetDirectoryName(modelPath), Path.GetFileNameWithoutExtension(modelPath) + ".mesh.xml"));
+
+                OgreMaterialExporter ome = new OgreMaterialExporter();
+                ome.Export(Path.Combine(this.ModelDirectory, Path.GetFileNameWithoutExtension(modelPath), Path.GetFileNameWithoutExtension(modelPath) + ".mtl"));
+            }
         }
 
         private async void FileExportXML()
@@ -1955,6 +1875,34 @@ namespace ModelViewer
                 this.ProgressValue = 10;
 
                 CopyAnvelFiles(path, this.approvedFileList);
+            }
+        }
+
+        private void FileExportVANE()
+        {
+            CommonOpenFileDialog ofd = new CommonOpenFileDialog();
+            ofd.Filters.Add(new CommonFileDialogFilter("VANE Text File", ".txt"));
+            ofd.Title = "Select VANE Text File";
+            if (ofd.ShowDialog().Equals(CommonFileDialogResult.Ok))
+            {
+                string path = ofd.FileName;
+                if (!path.EndsWith(".txt", true, null))
+                {
+                    path += ".txt";
+                }
+
+                List<string> files = VaneExporter.GetVANEObjects(path);
+
+                //find those assets and copy them to new directory
+                System.Windows.Forms.FolderBrowserDialog fb = new System.Windows.Forms.FolderBrowserDialog();
+                fb.Description = "Select directory to save VANE Objects";
+
+                if (fb.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string directory = fb.SelectedPath;
+
+                    VaneExporter.CopyVANEObjects(directory, modelDirectory, files);
+                }  
             }
         }
 
@@ -2125,10 +2073,6 @@ namespace ModelViewer
                 await writer.FlushAsync();
 
             }
-
-
-
-
         }
 
         private async Task WriteTagXml(XmlWriter writer, TagViewModel tag)
@@ -2234,17 +2178,7 @@ namespace ModelViewer
             this.viewport.ZoomExtents(500);
         }
 
-
-
-        private async void FileOpen()
-        {
-            this.CurrentModelPath = this.fileDialogService.OpenFileDialog("models", null, OpenFileFilter, ".obj");
-            this.CurrentModel = await this.LoadAsync(this.CurrentModelPath, false);
-            this.ApplicationTitle = string.Format(TitleFormatString, this.CurrentModelPath);
-            this.viewport.ZoomExtents(0);
-        }
-
-        public void FileSaveScreenshot()
+        public void SaveScreenshot()
         {
             RenderTargetBitmap bmp = new RenderTargetBitmap((int)this.viewport.Viewport.ActualWidth, (int)this.viewport.Viewport.ActualHeight, 96, 96, PixelFormats.Pbgra32);
 
@@ -2286,16 +2220,17 @@ namespace ModelViewer
 
         private void RenameObject()
         {
-
-        }
-
-        private void MarkTagAsReviewed()
-        {
-
+            throw new NotImplementedException();
         }
 
         #endregion
 
+        /// <summary>
+        /// Method to get the object ID from the database given a file ID and object name
+        /// </summary>
+        /// <param name="file_id">ID of file</param>
+        /// <param name="object_name">Name of object</param>
+        /// <returns>ID of object in database</returns>
         private int getObjectId(int file_id, string object_name)
         {
             string query = "SELECT object_id FROM Objects WHERE file_id = " + file_id + " AND object_name = '" + object_name + "';";
@@ -2312,6 +2247,11 @@ namespace ModelViewer
             return -1;
         }
 
+        /// <summary>
+        /// Method to get a file ID from the database given the file name
+        /// </summary>
+        /// <param name="s">Name of file to lookup</param>
+        /// <returns>ID of file in database</returns>
         private int getFileIdByFileName(string s)
         {
             //get file id
@@ -2330,6 +2270,10 @@ namespace ModelViewer
             return -1;
         }
 
+        /// <summary>
+        /// Get all usernames of people who have added, tagged, or owned a file in the database.
+        /// </summary>
+        /// <returns>List of users in the database</returns>
         public List<string> getListOfUsers()
         {
             List<string> users = new List<string>();
@@ -2362,6 +2306,10 @@ namespace ModelViewer
             return users;
         }
 
+        /// <summary>
+        /// Method to verify the database. Will compare the database with resource directory and list all files that exist in one without matching entries in the other. Displays a
+        /// dialog to allow the user to verify and remove the orphaned items.
+        /// </summary>
         public void checkValidityOfDatabase()
         {
             List<string> rawResourceDirs = new List<string>(Directory.GetDirectories(this.ModelDirectory));
@@ -2392,24 +2340,14 @@ namespace ModelViewer
 
             reader.Close();
 
-            /*Console.WriteLine("The following items have folders in the model directory, but no matching database entry:");
-            foreach (string s in resourceDirs)
-            {
-                Console.WriteLine(s);
-            }
-
-            Console.WriteLine("The following items have database entries, but no matching folder in the model directory:");
-            foreach (string s in unmatchedDbEntries)
-            {
-                Console.WriteLine(s);
-            }*/
-
             CheckValidityDialog cvd = new CheckValidityDialog(this, resourceDirs, unmatchedDbEntries);
             cvd.ShowDialog();
-
-
         }
 
+        /// <summary>
+        /// Method to delete a list of directories from the resource directory. Used in conjunction with the validity tool.
+        /// </summary>
+        /// <param name="directoryList">List of unmatched directories to delete</param>
         public void purgeDirectories(List<string> directoryList)
         {
             foreach (string s in directoryList)
@@ -2418,6 +2356,10 @@ namespace ModelViewer
             }
         }
 
+        /// <summary>
+        /// Method to delete a list of database entries. Used in conjunction with the validity tool.
+        /// </summary>
+        /// <param name="databaseEntryList">List of unmatched database entries to delete</param>
         public void purgeDatabaseEntries(List<string> databaseEntryList)
         {
             foreach (string s in databaseEntryList)
